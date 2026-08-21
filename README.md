@@ -47,7 +47,7 @@ the settings panel shows what to install and offers a retry button.
 If you ever need to run the setup manually:
 
 ```sh
-~/.config/omarchy/plugins/emil.spotify-wallpaper/install.sh
+~/.config/omarchy/plugins/emilsall.spotify-wallpaper/install.sh
 ```
 
 ## Usage
@@ -69,9 +69,9 @@ activates it.
 ## Uninstall
 
 ```sh
-cd ~/.config/omarchy/plugins/emil.spotify-wallpaper
+cd ~/.config/omarchy/plugins/emilsall.spotify-wallpaper
 ./uninstall.sh
-omarchy plugin remove emil.spotify-wallpaper
+omarchy plugin remove emilsall.spotify-wallpaper
 ```
 
 The uninstall script restores your wallpaper, stops and removes the systemd

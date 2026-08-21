@@ -7,7 +7,7 @@ import qs.Ui
 
 BarWidget {
   id: root
-  moduleName: "emil.spotify-wallpaper"
+  moduleName: "emilsall.spotify-wallpaper"
 
   readonly property string iconSource: Qt.resolvedUrl("disc-album.svg")
 

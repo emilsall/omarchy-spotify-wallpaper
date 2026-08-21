@@ -6,7 +6,7 @@ import qs.Ui
 
 Panel {
   id: root
-  moduleName: "emil.spotify-wallpaper"
+  moduleName: "emilsall.spotify-wallpaper"
   manageIpc: false
 
   property var anchorItem: null

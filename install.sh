@@ -38,7 +38,7 @@ fi
 
 # Install systemd user service
 mkdir -p "$SERVICE_DIR"
-sed "s|%h/.config/omarchy/plugins/emil.spotify-wallpaper|%h/.config/omarchy/plugins/$PLUGIN_ID|" \
+sed "s|%h/.config/omarchy/plugins/emilsall.spotify-wallpaper|%h/.config/omarchy/plugins/$PLUGIN_ID|" \
   "$PLUGIN_DIR/$SERVICE_NAME" > "$SERVICE_DIR/$SERVICE_NAME"
 
 systemctl --user daemon-reload

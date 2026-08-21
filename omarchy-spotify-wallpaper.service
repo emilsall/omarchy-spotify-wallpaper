@@ -5,7 +5,7 @@ Wants=graphical-session.target
 
 [Service]
 Type=simple
-ExecStart=%h/.config/omarchy/plugins/emil.spotify-wallpaper/spotify-wallpaper.sh
+ExecStart=%h/.config/omarchy/plugins/emilsall.spotify-wallpaper/spotify-wallpaper.sh
 Restart=on-failure
 RestartSec=5
 NoNewPrivileges=true
