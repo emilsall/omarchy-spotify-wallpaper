@@ -17,7 +17,12 @@ player with "spotify" in its name is detected automatically.
 ## Features
 
 - Album art becomes the desktop wallpaper while music plays
-- Select a specific connected Hyprland monitor, every monitor, or automatic targeting
+- Multi-monitor targeting from the settings panel:
+  - **Auto** applies album art to the focused monitor and keeps that selection
+    stable until the next wallpaper update
+  - **All** displays album art on every connected monitor
+  - **Named output** (for example, `DP-1` or `DP-2`) pins album art to that
+    specific Hyprland output while other monitors retain the Omarchy wallpaper
 - Three crop modes: **Fullscreen**, **Centered 75%**, **Native** resolution
 - Optional blur effect — blurs the fullscreen art, or uses a blurred backdrop behind the art in centered modes
 - Optional track info overlay (artist – album – title) rendered in the current
@@ -27,6 +32,13 @@ player with "spotify" in its name is detected automatically.
 - Settings panel in the Omarchy bar with native panel UI
 
 ## Screenshots
+### Multi-monitor targeting
+Select `auto`, every connected output, or pin album art to a specific Hyprland
+output such as `DP-2`.
+
+![Multi-monitor target selection](screenshots/multi-monitor.png)
+
+### Appearance
 ![panel](screenshots/panel.png)
 ![dark](screenshots/dark.png)
 ![light](screenshots/light.png)
@@ -69,7 +81,7 @@ the icon to quickly toggle the plugin on/off.
 | Setting | Description |
 |---------|-------------|
 | Enabled | Master on/off. Turning off restores the original wallpaper. |
-| Target monitor | `auto` uses the focused monitor when album art is applied; choose an output such as `DP-1` to pin it there, or `all` for every monitor. |
+| Target monitor | The dropdown lists `auto`, `all`, and each connected Hyprland output. `auto` targets the focused monitor when the wallpaper is applied; `all` displays it on every monitor; choosing a named output such as `DP-1` or `DP-2` pins it there while other monitors retain their normal Omarchy wallpaper. |
 | Crop mode | Fullscreen (center-crop fill), Centered 75% (75% of shortest screen dimension), or Native (original art size) — centered modes letterbox on the theme background color. |
 | Show track info | Overlay artist, album, and track title using theme colors and the current Omarchy font. |
 | Reset on close | Restore the original wallpaper when Spotify closes or playback stops. When off, the last album art stays as the wallpaper. |

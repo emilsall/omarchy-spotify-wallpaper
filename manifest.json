@@ -5,7 +5,7 @@
   "version": "1.2.0",
   "author": "emilsall (original), c8h10n4o2-b (multi-monitor fork)",
   "license": "MIT",
-  "description": "Multi-monitor-focused fork of emilsall/omarchy-spotify-wallpaper with selectable Hyprland output targeting.",
+  "description": "Multi-monitor-focused fork of emilsall/omarchy-spotify-wallpaper with automatic, all-monitor, and named Hyprland output targeting.",
   "kinds": [
     "bar-widget",
     "service"
