@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "id": "emil.spotify-wallpaper",
+  "name": "Spotify Album Wallpaper",
+  "version": "1.0.0",
+  "author": "emil",
+  "license": "MIT",
+  "description": "Shows currently playing Spotify album art as the desktop wallpaper. Works with both the official Spotify client and Omarchy Spotify. Restores the original wallpaper when playback stops.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Spotify Wallpaper",
+    "description": "Album art wallpaper switcher with crop and track info settings.",
+    "category": "Media",
+    "allowMultiple": false,
+    "defaultSection": "left",
+    "defaults": {
+      "enabled": "On",
+      "cropMode": "fullscreen",
+      "showTrackInfo": "On",
+      "resetOnClose": "On"
+    },
+    "schema": [
+      {
+        "key": "enabled",
+        "type": "enum",
+        "label": "Enabled",
+        "options": ["On", "Off"],
+        "defaultValue": "On",
+        "description": "When off, album art wallpaper is disabled and the original wallpaper is restored."
+      },
+      {
+        "key": "cropMode",
+        "type": "enum",
+        "label": "Crop mode",
+        "options": ["fullscreen", "centered-75", "centered-native"],
+        "defaultValue": "fullscreen",
+        "description": "Fullscreen fills the screen with center-cropped art. Centered 75% shows the art at 75% of the shortest screen dimension. Centered native shows art at its native resolution."
+      },
+      {
+        "key": "showTrackInfo",
+        "type": "enum",
+        "label": "Show track info",
+        "options": ["On", "Off"],
+        "defaultValue": "On",
+        "description": "Display artist, album, and track title on the wallpaper using theme colors."
+      },
+      {
+        "key": "resetOnClose",
+        "type": "enum",
+        "label": "Reset on close",
+        "options": ["On", "Off"],
+        "defaultValue": "On",
+        "description": "Restore the original wallpaper when Spotify closes or playback stops."
+      }
+    ]
+  }
+}

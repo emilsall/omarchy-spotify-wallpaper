@@ -1,0 +1,15 @@
+[Unit]
+Description=Omarchy Spotify Album Art Wallpaper
+After=graphical-session.target
+Wants=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.config/omarchy/plugins/emil.spotify-wallpaper/spotify-wallpaper.sh
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=graphical-session.target
