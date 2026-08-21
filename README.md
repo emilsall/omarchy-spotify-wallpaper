@@ -17,6 +17,12 @@ player with "spotify" in its name is detected automatically.
 - Restores your theme wallpaper on pause, stop, or app close (toggleable)
 - Settings panel in the Omarchy bar with native panel UI
 
+## Screenshots
+![panel](screenshots/panel.png)
+![dark](screenshots/dark.png)
+![light](screenshots/light.png)
+![full](screenshots/full.png)
+
 ## Requirements
 
 - Omarchy (Quattro shell)
