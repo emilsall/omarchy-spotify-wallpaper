@@ -4,7 +4,7 @@ Shows the currently playing Spotify album art as your desktop wallpaper.
 Restores the original theme wallpaper when playback stops or Spotify closes.
 
 Works with both the official Spotify client and
-[Omarchy Spotify](https://github.com/stappmus/QuickshellSpotify) — any MPRIS
+[Omarchy Spotify](https://github.com/stappmus/Omarchy-Spotify) — any MPRIS
 player with "spotify" in its name is detected automatically.
 
 ## Features
