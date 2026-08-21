@@ -2,15 +2,17 @@
   "schemaVersion": 1,
   "id": "emilsall.spotify-wallpaper",
   "name": "Spotify Album Wallpaper",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": "emilsall",
   "license": "MIT",
   "description": "Shows currently playing Spotify album art as the desktop wallpaper. Works with both the official Spotify client and Omarchy Spotify. Restores the original wallpaper when playback stops.",
   "kinds": [
-    "bar-widget"
+    "bar-widget",
+    "service"
   ],
   "entryPoints": {
-    "barWidget": "BarWidget.qml"
+    "barWidget": "BarWidget.qml",
+    "service": "Service.qml"
   },
   "barWidget": {
     "displayName": "Spotify Wallpaper",
@@ -23,9 +25,17 @@
       "cropMode": "fullscreen",
       "showTrackInfo": "On",
       "resetOnClose": "On",
-      "blurEffect": "Off"
+      "blurEffect": "Off",
+      "targetMonitor": "auto"
     },
     "schema": [
+      {
+        "key": "targetMonitor",
+        "type": "string",
+        "label": "Target monitor",
+        "defaultValue": "auto",
+        "description": "Hyprland output name to use, auto for the focused output when applied, or all for every monitor."
+      },
       {
         "key": "enabled",
         "type": "enum",
