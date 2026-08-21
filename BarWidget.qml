@@ -21,7 +21,7 @@ BarWidget {
   property bool serviceInstalled: false
   property bool installing: false
   property string installOutput: ""
-  property bool autoInstallAttempted: false
+  property bool setupChecked: false
 
   function pluginFile(name) {
     return decodeURIComponent(Qt.resolvedUrl(name).toString().replace(/^file:\/\//, ""))
@@ -40,16 +40,21 @@ BarWidget {
     path: Quickshell.env("HOME") + "/.config/systemd/user/" + root.serviceName
     watchChanges: true
     printErrors: false
-    onLoaded: root.serviceInstalled = true
+    onLoaded: {
+      root.serviceInstalled = true
+      root.setupChecked = true
+    }
     onLoadFailed: {
       root.serviceInstalled = false
-      // Auto-install once per session when the unit file is missing. Failures
-      // (e.g. missing dependencies) surface in the panel with a retry button.
-      if (!root.autoInstallAttempted) {
-        root.autoInstallAttempted = true
+      // Auto-install only on the initial check (widget load). A later failure
+      // means the unit was removed deliberately (uninstall.sh) — show the
+      // setup section in the panel, but don't fight the user by reinstalling.
+      if (!root.setupChecked) {
+        root.setupChecked = true
         Qt.callLater(root.runInstall)
       }
     }
+    onFileChanged: reload()
   }
 
   Process {
