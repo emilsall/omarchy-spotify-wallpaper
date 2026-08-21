@@ -11,6 +11,7 @@ player with "spotify" in its name is detected automatically.
 
 - Album art becomes the desktop wallpaper while music plays
 - Three crop modes: **Fullscreen**, **Centered 75%**, **Native** resolution
+- Optional blur effect — blurs the fullscreen art, or uses a blurred backdrop behind the art in centered modes
 - Optional track info overlay (artist – album – title) rendered in the current
   theme's colors — pill-style card on fullscreen, below the art on centered modes
 - Re-renders automatically on theme switches so colors always match
@@ -22,6 +23,8 @@ player with "spotify" in its name is detected automatically.
 ![dark](screenshots/dark.png)
 ![light](screenshots/light.png)
 ![full](screenshots/full.png)
+![blur](screenshots/blur1.png)
+![blur](screenshots/blur2s.png)
 
 ## Requirements
 
@@ -61,6 +64,7 @@ the icon to quickly toggle the plugin on/off.
 | Crop mode | Fullscreen (center-crop fill), Centered 75% (75% of shortest screen dimension), or Native (original art size) — centered modes letterbox on the theme background color. |
 | Show track info | Overlay artist, album, and track title using theme colors and the current Omarchy font. |
 | Reset on close | Restore the original wallpaper when Spotify closes or playback stops. When off, the last album art stays as the wallpaper. |
+| Blur effect | Fullscreen: blur the album art itself. Centered modes: use a blurred, screen-filling copy of the art (dimmed with 30% black) as the backdrop instead of the theme background color. |
 
 Removing the widget from the bar (or `omarchy plugin disable`) also disables
 the wallpaper service — the widget's presence in the bar layout is what
@@ -98,6 +102,10 @@ place — after changing `BarWidget.qml` or `Panel.qml`, run
 `omarchy restart shell` to be sure the bar is running your latest code.
 The bash service only needs `systemctl --user restart omarchy-spotify-wallpaper`
 after editing `spotify-wallpaper.sh`.
+
+## Changelog
+v1.0.0 - first release
+v1.1.0 - added blur effect
 
 ## Support me
 If you like the plugin you can buy me a coffee: 

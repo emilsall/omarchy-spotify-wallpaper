@@ -1,7 +1,7 @@
 #!/bin/bash
 # spotify-wallpaper.sh — Set currently playing Spotify album art as desktop wallpaper.
 # Reads settings from ~/.config/omarchy/shell.json (the source of truth).
-# Settings: enabled, cropMode, showTrackInfo, resetOnClose
+# Settings: enabled, cropMode, showTrackInfo, resetOnClose, blurEffect
 set -euo pipefail
 
 # The plugin ID is the name of the folder this script lives in, so renames of
@@ -73,22 +73,24 @@ read_config() {
     local crop_mode="fullscreen"
     local show_track_info="true"
     local reset_on_close="true"
+    local blur_effect="false"
     if [[ -f "$SHELL_JSON" ]]; then
         local line
         line=$(jq -r --arg id "$PLUGIN_ID" '
             ([.bar.layout.left, .bar.layout.center, .bar.layout.right] | flatten
              | map(select(.id == $id)) | .[0]) // empty
             | [(.enabled // "On"), (.cropMode // "fullscreen"),
-               (.showTrackInfo // "On"), (.resetOnClose // "On")] | @tsv
+               (.showTrackInfo // "On"), (.resetOnClose // "On"), (.blurEffect // "Off")] | @tsv
         ' "$SHELL_JSON" 2>/dev/null || true)
         if [[ -n "$line" ]]; then
-            IFS=$'\t' read -r enabled crop_mode show_track_info reset_on_close <<< "$line"
+            IFS=$'\t' read -r enabled crop_mode show_track_info reset_on_close blur_effect <<< "$line"
         fi
     fi
     [[ "$enabled" == "On" || "$enabled" == "true" ]] && enabled="true" || enabled="false"
     [[ "$show_track_info" == "On" || "$show_track_info" == "true" ]] && show_track_info="true" || show_track_info="false"
     [[ "$reset_on_close" == "On" || "$reset_on_close" == "true" ]] && reset_on_close="true" || reset_on_close="false"
-    printf '%s\n%s\n%s\n%s\n' "$enabled" "$crop_mode" "$show_track_info" "$reset_on_close"
+    [[ "$blur_effect" == "On" || "$blur_effect" == "true" ]] && blur_effect="true" || blur_effect="false"
+    printf '%s\n%s\n%s\n%s\n%s\n' "$enabled" "$crop_mode" "$show_track_info" "$reset_on_close" "$blur_effect"
 }
 
 get_theme_color() {
@@ -171,6 +173,7 @@ process_image() {
     local artist="$5"
     local album="$6"
     local title="$7"
+    local blur_effect="$8"
 
     local bg_color
     bg_color=$(get_theme_color "background" "#1e1e2e")
@@ -184,10 +187,14 @@ process_image() {
     local screen_w="${screen_dims%x*}"
     local screen_h="${screen_dims#*x}"
 
+    local blur_radius=$(( screen_h * 40 / 1080 ))
+    [[ $blur_radius -lt 12 ]] && blur_radius=12
+
     # When track details are shown, the text is baked into the image, so the
     # processed cache key must include the track text — otherwise a same-album
     # track change would reuse the image with the previous track's title.
-    local settings_key="${crop_mode}_${show_info}"
+    # v4: fix pill alpha order (was drawn fully opaque, not 50% black).
+    local settings_key="${crop_mode}_${blur_effect}_${show_info}_v4"
     if [[ "$show_info" == "true" ]]; then
         local track_hash
         track_hash=$(printf '%s' "${artist}|${album}|${title}" | md5sum | cut -d' ' -f1)
@@ -207,20 +214,42 @@ process_image() {
     case "$crop_mode" in
         fullscreen)
             magick_args+=("$input" -resize "${screen_w}x${screen_h}^" -gravity center -extent "${screen_w}x${screen_h}")
+            if [[ "$blur_effect" == "true" ]]; then
+                magick_args+=(-blur "0x$(( blur_radius / 2 ))")
+            fi
             ;;
         centered-75)
             local target_size
             target_size=$(( screen_w < screen_h ? screen_w : screen_h ))
             target_size=$(( target_size * 75 / 100 ))
             image_size=$target_size
-            magick_args+=("$input" -resize "${target_size}x${target_size}" -background "$bg_color" -gravity center -extent "${screen_w}x${screen_h}")
+            if [[ "$blur_effect" == "true" ]]; then
+                # Blurred, screen-filling copy of the art as the backdrop,
+                # dimmed with 50% black; the sharp art is composited centered
+                # on top of it.
+                magick_args+=(
+                    "(" "$input" -resize "${screen_w}x${screen_h}^" -gravity center -extent "${screen_w}x${screen_h}" -blur "0x${blur_radius}" -fill "#000000" -colorize 30 ")"
+                    "(" "$input" -resize "${target_size}x${target_size}" ")"
+                    -background "$bg_color" -gravity center -composite
+                )
+            else
+                magick_args+=("$input" -resize "${target_size}x${target_size}" -background "$bg_color" -gravity center -extent "${screen_w}x${screen_h}")
+            fi
             ;;
         centered-native)
             local img_w img_h
             img_w=$(magick identify -format '%w' "$input" 2>/dev/null || echo 0)
             img_h=$(magick identify -format '%h' "$input" 2>/dev/null || echo 0)
             image_size=$(( img_w < img_h ? img_w : img_h ))
-            magick_args+=("$input" -background "$bg_color" -gravity center -extent "${screen_w}x${screen_h}")
+            if [[ "$blur_effect" == "true" ]]; then
+                magick_args+=(
+                    "(" "$input" -resize "${screen_w}x${screen_h}^" -gravity center -extent "${screen_w}x${screen_h}" -blur "0x${blur_radius}" -fill "#000000" -colorize 30 ")"
+                    "(" "$input" ")"
+                    -background "$bg_color" -gravity center -composite
+                )
+            else
+                magick_args+=("$input" -background "$bg_color" -gravity center -extent "${screen_w}x${screen_h}")
+            fi
             ;;
         *)
             magick_args+=("$input")
@@ -270,8 +299,9 @@ process_image() {
             sub_pill_y=$(( pill_y + pill_pad_y + title_size + line_gap ))
 
             magick_args+=(
-                "(" -size "${pill_w}x${pill_h}" xc:none -fill "${bg_color}" -alpha set -channel A -evaluate multiply 0.92 +channel
-                -draw "roundRectangle 0,0 $((pill_w-1)),$((pill_h-1)) $pill_radius,$pill_radius" ")"
+                "(" -size "${pill_w}x${pill_h}" xc:none -fill "#000000"
+                -draw "roundRectangle 0,0 $((pill_w-1)),$((pill_h-1)) $pill_radius,$pill_radius"
+                -alpha set -channel A -evaluate multiply 0.5 +channel ")"
                 -gravity northwest -geometry "+${pill_x}+${pill_y}" -composite
                 -font "$font_name" -fill "$fg_color" -pointsize "$title_size" -gravity north
                 -annotate "+0+$title_pill_y" "$esc_title"
@@ -362,12 +392,13 @@ set_album_art() {
     local art_url="$1"
     local crop_mode="$2"
     local show_info="$3"
-    local artist="$4"
-    local album="$5"
-    local title="$6"
+    local blur_effect="$4"
+    local artist="$5"
+    local album="$6"
+    local title="$7"
 
     local track_key="${art_url}|${artist}|${album}|${title}"
-    local settings_key="${crop_mode}_${show_info}"
+    local settings_key="${crop_mode}_${blur_effect}_${show_info}"
 
     if [[ -f "$LAST_ART_FILE" ]] && [[ "$(cat "$LAST_ART_FILE")" == "$art_url" ]] && \
        [[ -f "$LAST_SETTINGS_FILE" ]] && [[ "$(cat "$LAST_SETTINGS_FILE")" == "$settings_key" ]] && \
@@ -412,13 +443,13 @@ set_album_art() {
         local url_hash
         url_hash=$(printf '%s' "$art_url" | md5sum | cut -d' ' -f1)
         local final_dest
-        final_dest=$(process_image "$raw_dest" "$crop_mode" "$url_hash" "$show_info" "$artist" "$album" "$title")
+        final_dest=$(process_image "$raw_dest" "$crop_mode" "$url_hash" "$show_info" "$artist" "$album" "$title" "$blur_effect")
         if [[ -n "$final_dest" ]] && [[ -f "$final_dest" ]]; then
             omarchy theme bg set "$final_dest"
             printf '%s' "$art_url" > "$LAST_ART_FILE"
             printf '%s' "$settings_key" > "$LAST_SETTINGS_FILE"
             printf '%s' "$track_key" > "$LAST_TRACK_FILE"
-            log "Set album art as wallpaper: $title - $artist (crop: $crop_mode, info: $show_info)"
+            log "Set album art as wallpaper: $title - $artist (crop: $crop_mode, info: $show_info, blur: $blur_effect)"
         fi
     fi
 }
@@ -441,8 +472,9 @@ while true; do
     config_crop=$(echo "$config_output" | sed -n '2p')
     config_show_info=$(echo "$config_output" | sed -n '3p')
     config_reset_on_close=$(echo "$config_output" | sed -n '4p')
+    config_blur=$(echo "$config_output" | sed -n '5p')
 
-    current_settings_key="${config_crop}_${config_show_info}"
+    current_settings_key="${config_crop}_${config_blur}_${config_show_info}"
 
     if [[ "$config_enabled" != "true" ]]; then
         if $was_enabled; then
@@ -483,7 +515,7 @@ while true; do
             save_original
             capture_theme_wallpaper
             theme_changed >/dev/null || true
-            log "Spotify playing ($ACTIVE_PLAYER) — switching to album art wallpaper (crop: $config_crop, info: $config_show_info)"
+            log "Spotify playing ($ACTIVE_PLAYER) — switching to album art wallpaper (crop: $config_crop, info: $config_show_info, blur: $config_blur)"
         fi
 
         art_url=$(playerctl -p "$ACTIVE_PLAYER" metadata mpris:artUrl 2>/dev/null || true)
@@ -492,7 +524,7 @@ while true; do
         title=$(playerctl -p "$ACTIVE_PLAYER" metadata xesam:title 2>/dev/null || true)
 
         if [[ -n "$art_url" ]]; then
-            set_album_art "$art_url" "$config_crop" "$config_show_info" "$artist" "$album" "$title"
+            set_album_art "$art_url" "$config_crop" "$config_show_info" "$config_blur" "$artist" "$album" "$title"
         fi
     else
         if $spotify_playing; then

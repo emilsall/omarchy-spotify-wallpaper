@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "emilsall.spotify-wallpaper",
   "name": "Spotify Album Wallpaper",
-  "version": "1.0.0",
-  "author": "emil",
+  "version": "1.1.0",
+  "author": "emilsall",
   "license": "MIT",
   "description": "Shows currently playing Spotify album art as the desktop wallpaper. Works with both the official Spotify client and Omarchy Spotify. Restores the original wallpaper when playback stops.",
   "kinds": [
@@ -22,7 +22,8 @@
       "enabled": "On",
       "cropMode": "fullscreen",
       "showTrackInfo": "On",
-      "resetOnClose": "On"
+      "resetOnClose": "On",
+      "blurEffect": "Off"
     },
     "schema": [
       {
@@ -56,6 +57,14 @@
         "options": ["On", "Off"],
         "defaultValue": "On",
         "description": "Restore the original wallpaper when Spotify closes or playback stops."
+      },
+      {
+        "key": "blurEffect",
+        "type": "enum",
+        "label": "Blur effect",
+        "options": ["On", "Off"],
+        "defaultValue": "Off",
+        "description": "Blur the album art in fullscreen mode, or use a blurred backdrop behind the art in centered modes."
       }
     ]
   }

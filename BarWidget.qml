@@ -15,6 +15,7 @@ BarWidget {
   readonly property string cropMode: setting("cropMode", "fullscreen")
   readonly property bool showTrackInfo: setting("showTrackInfo", "On") !== "Off"
   readonly property bool resetOnClose: setting("resetOnClose", "On") !== "Off"
+  readonly property bool blurEffect: setting("blurEffect", "Off") !== "Off"
 
   // --- Background service setup (self-install) ---
   readonly property string serviceName: "omarchy-spotify-wallpaper.service"

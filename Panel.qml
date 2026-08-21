@@ -21,6 +21,7 @@ Panel {
   readonly property string cropMode: setting("cropMode", "fullscreen")
   readonly property bool showTrackInfo: setting("showTrackInfo", "On") !== "Off"
   readonly property bool resetOnClose: setting("resetOnClose", "On") !== "Off"
+  readonly property bool blurEffect: setting("blurEffect", "Off") !== "Off"
 
   // Background-service setup state lives on the host widget (it owns the
   // FileView/Process). Default to "installed" so the section never flashes
@@ -234,6 +235,17 @@ Panel {
             fontFamily: root.fontFamily
             width: parent.width
             onClicked: root.updateSetting("showTrackInfo", checked ? "Off" : "On")
+          }
+
+          Toggle {
+            label: "Blur effect"
+            description: "Fullscreen: blur the album art. Centered: blurred backdrop behind the art"
+            checked: root.blurEffect
+            foreground: root.foreground
+            accent: root.accent
+            fontFamily: root.fontFamily
+            width: parent.width
+            onClicked: root.updateSetting("blurEffect", checked ? "Off" : "On")
           }
 
           Toggle {
