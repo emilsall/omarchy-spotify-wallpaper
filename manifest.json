@@ -34,7 +34,7 @@
         "type": "string",
         "label": "Target monitor",
         "defaultValue": "auto",
-        "description": "Hyprland output name to use, auto for the focused output when applied, or all for every monitor."
+        "description": "Choose auto to resolve the focused output on each wallpaper update, all for every connected monitor, or a named Hyprland output to pin album art there."
       },
       {
         "key": "enabled",
@@ -42,7 +42,7 @@
         "label": "Enabled",
         "options": ["On", "Off"],
         "defaultValue": "On",
-        "description": "When off, album art wallpaper is disabled and the original wallpaper is restored."
+        "description": "When off, the album-art layer is removed and the normal Omarchy wallpaper is revealed."
       },
       {
         "key": "cropMode",
@@ -66,7 +66,7 @@
         "label": "Reset on close",
         "options": ["On", "Off"],
         "defaultValue": "On",
-        "description": "Restore the original wallpaper when Spotify closes or playback stops."
+        "description": "Remove the album-art layer when Spotify closes or playback stops."
       },
       {
         "key": "blurEffect",

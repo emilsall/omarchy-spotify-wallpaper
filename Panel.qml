@@ -303,7 +303,7 @@ Panel {
 
           Toggle {
             label: "Reset on close"
-            description: "Restore the original wallpaper when Spotify closes or playback stops"
+            description: "Remove album art and reveal the Omarchy wallpaper when playback stops"
             checked: root.resetOnClose
             foreground: root.foreground
             accent: root.accent

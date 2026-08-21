@@ -1,5 +1,5 @@
 [Unit]
-Description=Omarchy Spotify Album Art Wallpaper
+Description=Omarchy Spotify Album Art Wallpaper (Multi-Monitor)
 After=graphical-session.target
 Wants=graphical-session.target
 

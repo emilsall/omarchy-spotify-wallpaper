@@ -1,5 +1,5 @@
 #!/bin/bash
-# spotify-wallpaper.sh — Set currently playing Spotify album art as desktop wallpaper.
+# spotify-wallpaper.sh — Render Spotify album art for the selected monitor layer.
 # Reads settings from ~/.config/omarchy/shell.json (the source of truth).
 # Settings: enabled, cropMode, showTrackInfo, resetOnClose, blurEffect, targetMonitor
 set -euo pipefail
@@ -401,9 +401,9 @@ restore_wallpaper() {
     fi
     rm -f "$ACTIVE_WALLPAPER_FILE"
     if [[ -n "$restore_path" ]] && [[ -f "$restore_path" ]]; then
-        log "Restored original wallpaper: $restore_path"
+        log "Removed album-art layer; revealed Omarchy wallpaper: $restore_path"
     else
-        log "Warning: no original wallpaper to restore"
+        log "Removed album-art layer; no saved theme wallpaper reference found"
     fi
     rm -f "$ORIGINAL_FILE" "$LAST_ART_FILE" "$LAST_SETTINGS_FILE" "$LAST_TRACK_FILE"
     # Defer cache cleanup: the shell's background transition may still be
@@ -507,7 +507,7 @@ while true; do
     if [[ "$config_enabled" != "true" ]]; then
         if $was_enabled; then
             was_enabled=false
-            log "Plugin disabled — restoring original wallpaper"
+            log "Plugin disabled — removing album-art layer"
             restore_wallpaper
             spotify_playing=false
         fi
@@ -560,9 +560,9 @@ while true; do
             if [[ "$config_reset_on_close" == "true" ]]; then
                 any_player=$(playerctl -l 2>/dev/null | grep -i spotify | head -1 || true)
                 if [[ -z "$any_player" ]]; then
-                    log "Spotify closed — restoring original wallpaper"
+                    log "Spotify closed — removing album-art layer"
                 else
-                    log "Spotify paused/stopped — restoring original wallpaper"
+                    log "Spotify paused/stopped — removing album-art layer"
                 fi
                 restore_wallpaper
             else

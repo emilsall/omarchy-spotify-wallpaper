@@ -17,7 +17,7 @@ rm -f "$SERVICE_DIR/$SERVICE_NAME"
 systemctl --user daemon-reload
 echo "Service removed: $SERVICE_NAME"
 
-# Restore the original wallpaper now that the service is stopped
+# Remove the plugin-owned album-art layer now that the service is stopped.
 "$PLUGIN_DIR/spotify-wallpaper.sh" --reset || true
 
 rm -f "$HOOK_FILE"
