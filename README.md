@@ -36,12 +36,19 @@ omarchy pkg add playerctl jq imagemagick curl
 
 ```sh
 omarchy plugin add https://github.com/emil/omarchy-spotify-wallpaper.git --enable
-cd ~/.config/omarchy/plugins/emil.spotify-wallpaper
-./install.sh
 ```
 
-The install script installs a systemd user service (starts with your session)
-and a `theme-set` hook, then verifies dependencies.
+That's it — when the widget first loads, it detects that its background
+service is missing and runs the bundled `install.sh` automatically. The
+script installs a systemd user service (starts with your session) and a
+`theme-set` hook, and verifies dependencies. If dependencies are missing,
+the settings panel shows what to install and offers a retry button.
+
+If you ever need to run the setup manually:
+
+```sh
+~/.config/omarchy/plugins/emil.spotify-wallpaper/install.sh
+```
 
 ## Usage
 

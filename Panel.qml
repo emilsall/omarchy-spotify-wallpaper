@@ -22,6 +22,15 @@ Panel {
   readonly property bool showTrackInfo: setting("showTrackInfo", "On") !== "Off"
   readonly property bool resetOnClose: setting("resetOnClose", "On") !== "Off"
 
+  // Background-service setup state lives on the host widget (it owns the
+  // FileView/Process). Default to "installed" so the section never flashes
+  // before hostWidget is injected.
+  readonly property bool serviceInstalled: hostWidget ? hostWidget.serviceInstalled : true
+  readonly property bool installing: hostWidget ? hostWidget.installing : false
+  readonly property string installOutput: hostWidget ? hostWidget.installOutput : ""
+
+  function runInstall() { if (hostWidget) hostWidget.runInstall() }
+
   readonly property var cropOptions: [
     { value: "fullscreen", label: "Fullscreen" },
     { value: "centered-75", label: "Centered 75%" },
@@ -138,6 +147,59 @@ Panel {
 
           PanelSeparator {
             foreground: root.foreground
+          }
+
+          // Setup section — only visible until the background service exists.
+          // The widget auto-runs install.sh once on load; this is the status
+          // display and manual retry path.
+          Column {
+            visible: !root.serviceInstalled
+            width: parent.width
+            spacing: Style.space(10)
+
+            PanelSectionHeader {
+              text: "SETUP REQUIRED"
+              foreground: root.foreground
+              fontFamily: root.fontFamily
+            }
+
+            Text {
+              width: parent.width
+              text: "The background service that watches Spotify playback is not installed yet."
+              color: Qt.darker(root.foreground, 1.4)
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.body
+              wrapMode: Text.WordWrap
+            }
+
+            Button {
+              width: parent.width
+              text: root.installing ? "Installing service…" : "Install background service"
+              fontFamily: root.fontFamily
+              fontSize: Style.font.body
+              iconSize: Style.font.icon
+              foreground: root.foreground
+              accent: root.accent
+              verticalPadding: Style.space(14)
+              bordered: true
+              selected: true
+              enabled: !root.installing
+              onClicked: root.runInstall()
+            }
+
+            Text {
+              visible: root.installOutput !== ""
+              width: parent.width
+              text: root.installOutput
+              color: Color.urgent
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.bodySmall
+              wrapMode: Text.WordWrap
+            }
+
+            PanelSeparator {
+              foreground: root.foreground
+            }
           }
 
           PanelSectionHeader {
