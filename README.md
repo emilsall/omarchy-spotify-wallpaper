@@ -35,7 +35,7 @@ omarchy pkg add playerctl jq imagemagick curl
 ## Install
 
 ```sh
-omarchy plugin add https://github.com/emil/omarchy-spotify-wallpaper.git --enable
+omarchy plugin add https://github.com/emilsall/omarchy-spotify-wallpaper.git --enable
 ```
 
 That's it — when the widget first loads, it detects that its background
