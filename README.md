@@ -1,4 +1,11 @@
-# Spotify Album Wallpaper
+# Spotify Album Wallpaper — Multi-Monitor Fork
+
+This is a multi-monitor-focused fork of Emil Sall's original
+[Omarchy Spotify Wallpaper](https://github.com/emilsall/omarchy-spotify-wallpaper)
+plugin. It preserves the original plugin's design while adding selectable
+Hyprland output targeting for multi-monitor Omarchy setups. These fork-specific
+changes are maintained independently and are not affiliated with or supported
+by the original author.
 
 Shows the currently playing Spotify album art as your desktop wallpaper.
 Restores the original theme wallpaper when playback stops or Spotify closes.
@@ -39,7 +46,7 @@ omarchy pkg add playerctl jq imagemagick curl
 ## Install
 
 ```sh
-omarchy plugin add https://github.com/emilsall/omarchy-spotify-wallpaper.git --enable
+omarchy plugin add https://github.com/c8h10n4o2-b/omarchy-spotify-wallpaper.git --enable
 ```
 
 That's it — when the widget first loads, it detects that its background
