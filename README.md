@@ -24,7 +24,7 @@ player with "spotify" in its name is detected automatically.
 ![light](screenshots/light.png)
 ![full](screenshots/full.png)
 ![blur](screenshots/blur1.png)
-![blur](screenshots/blur2s.png)
+![blur](screenshots/blur2.png)
 
 ## Requirements
 
