@@ -24,7 +24,9 @@ Panel {
   readonly property bool resetOnClose: setting("resetOnClose", "On") !== "Off"
   readonly property bool blurEffect: setting("blurEffect", "Off") !== "Off"
   readonly property string targetMonitor: setting("targetMonitor", "auto")
+  readonly property string barSection: setting("barSection", "left")
   property var monitorOptions: ["auto", "all"]
+  property string placementError: ""
 
   // Background-service setup state lives on the host widget (it owns the
   // FileView/Process). Default to "installed" so the section never flashes
@@ -37,6 +39,23 @@ Panel {
 
   function refreshMonitors() {
     if (!monitorProc.running) monitorProc.running = true
+  }
+
+  function moveToSection(section) {
+    if (placementProc.running || section === root.barSection) return
+    root.placementError = ""
+    placementProc.command = ["omarchy", "bar", "set", root.moduleName,
+                             "barSection", section, "--section", section]
+    placementProc.running = true
+  }
+
+  Process {
+    id: placementProc
+    stderr: StdioCollector { id: placementStderr; waitForEnd: true }
+    onExited: function(exitCode) {
+      if (exitCode !== 0)
+        root.placementError = String(placementStderr.text || "Could not move the widget.").trim()
+    }
   }
 
   Process {
@@ -59,6 +78,11 @@ Panel {
     { value: "fullscreen", label: "Fullscreen" },
     { value: "centered-75", label: "Centered 75%" },
     { value: "centered-native", label: "Native" }
+  ]
+  readonly property var sectionOptions: [
+    { value: "left", label: "Left" },
+    { value: "center", label: "Centre" },
+    { value: "right", label: "Right" }
   ]
 
   function open() { refreshMonitors(); controller.show() }
@@ -224,6 +248,49 @@ Panel {
             PanelSeparator {
               foreground: root.foreground
             }
+          }
+
+          PanelSectionHeader {
+            text: "BAR PLACEMENT"
+            foreground: root.foreground
+            fontFamily: root.fontFamily
+          }
+
+          ButtonGroup {
+            width: parent.width
+            options: root.sectionOptions
+            value: root.barSection
+            foreground: root.foreground
+            background: Color.popups.background
+            accent: root.accent
+            fontFamily: root.fontFamily
+            fontSize: Style.font.body
+            focusable: false
+            enabled: !placementProc.running
+            onChanged: root.moveToSection(value)
+          }
+
+          Text {
+            visible: root.placementError !== ""
+            width: parent.width
+            text: root.placementError
+            color: Color.urgent
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.bodySmall
+            wrapMode: Text.WordWrap
+          }
+
+          Text {
+            width: parent.width
+            text: "Choose which section of the Omarchy bar contains the icon."
+            color: Qt.darker(root.foreground, 1.4)
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.bodySmall
+            wrapMode: Text.WordWrap
+          }
+
+          PanelSeparator {
+            foreground: root.foreground
           }
 
           PanelSectionHeader {

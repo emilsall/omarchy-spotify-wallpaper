@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "emilsall.spotify-wallpaper",
   "name": "Spotify Album Wallpaper — Multi-Monitor Fork",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "author": "emilsall (original), c8h10n4o2-b (multi-monitor fork)",
   "license": "MIT",
   "description": "Multi-monitor-focused fork of emilsall/omarchy-spotify-wallpaper with automatic, all-monitor, and named Hyprland output targeting.",
@@ -26,9 +26,18 @@
       "showTrackInfo": "On",
       "resetOnClose": "On",
       "blurEffect": "Off",
-      "targetMonitor": "auto"
+      "targetMonitor": "auto",
+      "barSection": "left"
     },
     "schema": [
+      {
+        "key": "barSection",
+        "type": "enum",
+        "label": "Bar placement",
+        "options": ["left", "center", "right"],
+        "defaultValue": "left",
+        "description": "Choose which Omarchy bar section contains the plugin icon. Left preserves the original placement."
+      },
       {
         "key": "targetMonitor",
         "type": "string",

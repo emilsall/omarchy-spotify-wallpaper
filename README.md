@@ -3,7 +3,8 @@
 This is a multi-monitor-focused fork of Emil Sall's original
 [Omarchy Spotify Wallpaper](https://github.com/emilsall/omarchy-spotify-wallpaper)
 plugin. It preserves the original plugin's design while adding selectable
-Hyprland output targeting for multi-monitor Omarchy setups. These fork-specific
+Hyprland output targeting for multi-monitor Omarchy setups and a configurable
+bar section for the plugin icon. These fork-specific
 changes are maintained independently and are not affiliated with or supported
 by the original author.
 
@@ -18,6 +19,8 @@ player with "spotify" in its name is detected automatically.
 ## Features
 
 - Album art becomes the desktop wallpaper while music plays
+- Icon placement can be switched between the left, centre, and right Omarchy
+  bar sections; existing installations remain on the left by default
 - Multi-monitor targeting from the settings panel:
   - **Auto** resolves to the focused monitor whenever album art is generated
     and keeps that resolved output stable until the next wallpaper update
@@ -88,7 +91,8 @@ omarchy restart shell
 If the original upstream plugin is already installed, it has the same plugin
 ID and cannot coexist with this fork. Remove the original installation first,
 then perform the fresh install above. Settings stored on the existing bar entry
-use compatible keys; the new `targetMonitor` setting defaults to `auto`.
+use compatible keys. The new `targetMonitor` setting defaults to `auto`, and
+`barSection` defaults to `left` to preserve the original icon placement.
 
 ## Usage
 
@@ -98,6 +102,7 @@ the icon to quickly toggle the plugin on/off.
 | Setting | Description |
 |---------|-------------|
 | Enabled | Master on/off. Turning it off removes the album-art layer and reveals the normal Omarchy wallpaper. |
+| Bar placement | Moves the icon to the left, centre, or right section of the Omarchy bar. Left is the default for backward compatibility. |
 | Target monitor | The dropdown lists `auto`, `all`, and every currently connected Hyprland output. `auto` resolves to the focused monitor whenever album art is generated; `all` displays it on every monitor; choosing a named output such as `DP-1` or `DP-2` pins it there while other monitors retain their normal Omarchy wallpaper. If a pinned output is unavailable, the next update falls back to the focused output without overwriting the saved selection. |
 | Crop mode | Fullscreen (center-crop fill), Centered 75% (75% of shortest screen dimension), or Native (original art size) — centered modes letterbox on the theme background color. |
 | Show track info | Overlay artist, album, and track title using theme colors and the current Omarchy font. |
@@ -183,7 +188,7 @@ Files it manages:
 - `~/.config/systemd/user/omarchy-spotify-wallpaper.service` — installed user service
 - `~/.config/omarchy/hooks/theme-set.d/spotify-wallpaper-theme-hook.sh` — theme hook installed through Omarchy
 
-The monitor choice itself is stored on the widget entry in
+The monitor choice and preferred bar section are stored on the widget entry in
 `~/.config/omarchy/shell.json`, using Omarchy's supported user configuration.
 No files under `/usr/share/omarchy` are changed.
 
@@ -208,6 +213,7 @@ git diff --check
 v1.0.0 - first release
 v1.1.0 - added blur effect
 v1.2.0 - added selectable multi-monitor targeting
+v1.3.0 - added selectable left, centre, or right bar placement
 
 ## Support the original author
 
