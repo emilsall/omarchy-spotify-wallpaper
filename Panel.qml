@@ -44,8 +44,13 @@ Panel {
   function moveToSection(section) {
     if (placementProc.running || section === root.barSection) return
     root.placementError = ""
-    placementProc.command = ["omarchy", "bar", "set", root.moduleName,
-                             "barSection", section, "--section", section]
+    // Persist the selection while the widget is still in its current section,
+    // then use Omarchy's dedicated move operation. `bar set --section` treats
+    // the section as a source selector, so passing the destination there makes
+    // it look for the widget in a section it has not reached yet.
+    root.updateSetting("barSection", section)
+    placementProc.command = ["omarchy", "bar", "move", root.moduleName,
+                             "--section", section]
     placementProc.running = true
   }
 
@@ -251,49 +256,6 @@ Panel {
           }
 
           PanelSectionHeader {
-            text: "BAR PLACEMENT"
-            foreground: root.foreground
-            fontFamily: root.fontFamily
-          }
-
-          ButtonGroup {
-            width: parent.width
-            options: root.sectionOptions
-            value: root.barSection
-            foreground: root.foreground
-            background: Color.popups.background
-            accent: root.accent
-            fontFamily: root.fontFamily
-            fontSize: Style.font.body
-            focusable: false
-            enabled: !placementProc.running
-            onChanged: root.moveToSection(value)
-          }
-
-          Text {
-            visible: root.placementError !== ""
-            width: parent.width
-            text: root.placementError
-            color: Color.urgent
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.bodySmall
-            wrapMode: Text.WordWrap
-          }
-
-          Text {
-            width: parent.width
-            text: "Choose which section of the Omarchy bar contains the icon."
-            color: Qt.darker(root.foreground, 1.4)
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.bodySmall
-            wrapMode: Text.WordWrap
-          }
-
-          PanelSeparator {
-            foreground: root.foreground
-          }
-
-          PanelSectionHeader {
             text: "TARGET MONITOR"
             foreground: root.foreground
             fontFamily: root.fontFamily
@@ -377,6 +339,49 @@ Panel {
             fontFamily: root.fontFamily
             width: parent.width
             onClicked: root.updateSetting("resetOnClose", checked ? "Off" : "On")
+          }
+
+          PanelSeparator {
+            foreground: root.foreground
+          }
+
+          PanelSectionHeader {
+            text: "BAR PLACEMENT"
+            foreground: root.foreground
+            fontFamily: root.fontFamily
+          }
+
+          ButtonGroup {
+            width: parent.width
+            options: root.sectionOptions
+            value: root.barSection
+            foreground: root.foreground
+            background: Color.popups.background
+            accent: root.accent
+            fontFamily: root.fontFamily
+            fontSize: Style.font.body
+            focusable: false
+            enabled: !placementProc.running
+            onChanged: root.moveToSection(value)
+          }
+
+          Text {
+            visible: root.placementError !== ""
+            width: parent.width
+            text: root.placementError
+            color: Color.urgent
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.bodySmall
+            wrapMode: Text.WordWrap
+          }
+
+          Text {
+            width: parent.width
+            text: "Choose which section of the Omarchy bar contains the icon."
+            color: Qt.darker(root.foreground, 1.4)
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.bodySmall
+            wrapMode: Text.WordWrap
           }
         }
       }
