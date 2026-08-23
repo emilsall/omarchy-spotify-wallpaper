@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Effects
 import QtQuick.Controls
+import Quickshell.Io
 import qs.Commons
 import qs.Ui
 
@@ -22,6 +23,10 @@ Panel {
   readonly property bool showTrackInfo: setting("showTrackInfo", "On") !== "Off"
   readonly property bool resetOnClose: setting("resetOnClose", "On") !== "Off"
   readonly property bool blurEffect: setting("blurEffect", "Off") !== "Off"
+  readonly property string targetMonitor: setting("targetMonitor", "auto")
+  readonly property string barSection: setting("barSection", "left")
+  property var monitorOptions: ["auto", "all"]
+  property string placementError: ""
 
   // Background-service setup state lives on the host widget (it owns the
   // FileView/Process). Default to "installed" so the section never flashes
@@ -32,13 +37,60 @@ Panel {
 
   function runInstall() { if (hostWidget) hostWidget.runInstall() }
 
+  function refreshMonitors() {
+    if (!monitorProc.running) monitorProc.running = true
+  }
+
+  function moveToSection(section) {
+    if (placementProc.running || section === root.barSection) return
+    root.placementError = ""
+    // Persist the selection while the widget is still in its current section,
+    // then use Omarchy's dedicated move operation. `bar set --section` treats
+    // the section as a source selector, so passing the destination there makes
+    // it look for the widget in a section it has not reached yet.
+    root.updateSetting("barSection", section)
+    placementProc.command = ["omarchy", "bar", "move", root.moduleName,
+                             "--section", section]
+    placementProc.running = true
+  }
+
+  Process {
+    id: placementProc
+    stderr: StdioCollector { id: placementStderr; waitForEnd: true }
+    onExited: function(exitCode) {
+      if (exitCode !== 0)
+        root.placementError = String(placementStderr.text || "Could not move the widget.").trim()
+    }
+  }
+
+  Process {
+    id: monitorProc
+    command: ["hyprctl", "monitors", "-j"]
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: {
+        var options = ["auto", "all"]
+        try {
+          var monitors = JSON.parse(String(text || "[]"))
+          for (var i = 0; i < monitors.length; i++) options.push(String(monitors[i].name))
+        } catch (e) {}
+        root.monitorOptions = options
+      }
+    }
+  }
+
   readonly property var cropOptions: [
     { value: "fullscreen", label: "Fullscreen" },
     { value: "centered-75", label: "Centered 75%" },
     { value: "centered-native", label: "Native" }
   ]
+  readonly property var sectionOptions: [
+    { value: "left", label: "Left" },
+    { value: "center", label: "Centre" },
+    { value: "right", label: "Right" }
+  ]
 
-  function open() { controller.show() }
+  function open() { refreshMonitors(); controller.show() }
   function close() { controller.hide() }
   function toggle() { opened ? close() : open() }
 
@@ -204,6 +256,36 @@ Panel {
           }
 
           PanelSectionHeader {
+            text: "TARGET MONITOR"
+            foreground: root.foreground
+            fontFamily: root.fontFamily
+          }
+
+          ComboBox {
+            width: parent.width
+            model: root.monitorOptions
+            currentIndex: Math.max(0, root.monitorOptions.indexOf(root.targetMonitor))
+            onActivated: root.updateSetting("targetMonitor", String(currentText))
+          }
+
+          Text {
+            width: parent.width
+            text: root.targetMonitor === "auto"
+              ? "Auto uses the focused monitor when the wallpaper is applied."
+              : root.targetMonitor === "all"
+                ? "Album art is shown on every connected monitor."
+                : "Album art is limited to the " + root.targetMonitor + " output."
+            color: Qt.darker(root.foreground, 1.4)
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.bodySmall
+            wrapMode: Text.WordWrap
+          }
+
+          PanelSeparator {
+            foreground: root.foreground
+          }
+
+          PanelSectionHeader {
             text: "CROP MODE"
             foreground: root.foreground
             fontFamily: root.fontFamily
@@ -250,13 +332,56 @@ Panel {
 
           Toggle {
             label: "Reset on close"
-            description: "Restore the original wallpaper when Spotify closes or playback stops"
+            description: "Remove album art and reveal the Omarchy wallpaper when playback stops"
             checked: root.resetOnClose
             foreground: root.foreground
             accent: root.accent
             fontFamily: root.fontFamily
             width: parent.width
             onClicked: root.updateSetting("resetOnClose", checked ? "Off" : "On")
+          }
+
+          PanelSeparator {
+            foreground: root.foreground
+          }
+
+          PanelSectionHeader {
+            text: "BAR PLACEMENT"
+            foreground: root.foreground
+            fontFamily: root.fontFamily
+          }
+
+          ButtonGroup {
+            width: parent.width
+            options: root.sectionOptions
+            value: root.barSection
+            foreground: root.foreground
+            background: Color.popups.background
+            accent: root.accent
+            fontFamily: root.fontFamily
+            fontSize: Style.font.body
+            focusable: false
+            enabled: !placementProc.running
+            onChanged: root.moveToSection(value)
+          }
+
+          Text {
+            visible: root.placementError !== ""
+            width: parent.width
+            text: root.placementError
+            color: Color.urgent
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.bodySmall
+            wrapMode: Text.WordWrap
+          }
+
+          Text {
+            width: parent.width
+            text: "Choose which section of the Omarchy bar contains the icon."
+            color: Qt.darker(root.foreground, 1.4)
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.bodySmall
+            wrapMode: Text.WordWrap
           }
         }
       }

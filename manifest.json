@@ -1,20 +1,22 @@
 {
   "schemaVersion": 1,
   "id": "emilsall.spotify-wallpaper",
-  "name": "Spotify Album Wallpaper",
-  "version": "1.1.0",
-  "author": "emilsall",
+  "name": "Spotify Album Wallpaper — Multi-Monitor Fork",
+  "version": "1.3.0",
+  "author": "emilsall (original), c8h10n4o2-b (multi-monitor fork)",
   "license": "MIT",
-  "description": "Shows currently playing Spotify album art as the desktop wallpaper. Works with both the official Spotify client and Omarchy Spotify. Restores the original wallpaper when playback stops.",
+  "description": "Multi-monitor-focused fork of emilsall/omarchy-spotify-wallpaper with automatic, all-monitor, and named Hyprland output targeting.",
   "kinds": [
-    "bar-widget"
+    "bar-widget",
+    "service"
   ],
   "entryPoints": {
-    "barWidget": "BarWidget.qml"
+    "barWidget": "BarWidget.qml",
+    "service": "Service.qml"
   },
   "barWidget": {
-    "displayName": "Spotify Wallpaper",
-    "description": "Album art wallpaper switcher with crop and track info settings.",
+    "displayName": "Spotify Wallpaper · Multi-Monitor",
+    "description": "Multi-monitor fork with selectable output targeting, crop, and track info settings.",
     "category": "Media",
     "allowMultiple": false,
     "defaultSection": "left",
@@ -23,16 +25,33 @@
       "cropMode": "fullscreen",
       "showTrackInfo": "On",
       "resetOnClose": "On",
-      "blurEffect": "Off"
+      "blurEffect": "Off",
+      "targetMonitor": "auto",
+      "barSection": "left"
     },
     "schema": [
+      {
+        "key": "barSection",
+        "type": "enum",
+        "label": "Bar placement",
+        "options": ["left", "center", "right"],
+        "defaultValue": "left",
+        "description": "Choose which Omarchy bar section contains the plugin icon. Left preserves the original placement."
+      },
+      {
+        "key": "targetMonitor",
+        "type": "string",
+        "label": "Target monitor",
+        "defaultValue": "auto",
+        "description": "Choose auto to resolve the focused output on each wallpaper update, all for every connected monitor, or a named Hyprland output to pin album art there."
+      },
       {
         "key": "enabled",
         "type": "enum",
         "label": "Enabled",
         "options": ["On", "Off"],
         "defaultValue": "On",
-        "description": "When off, album art wallpaper is disabled and the original wallpaper is restored."
+        "description": "When off, the album-art layer is removed and the normal Omarchy wallpaper is revealed."
       },
       {
         "key": "cropMode",
@@ -56,7 +75,7 @@
         "label": "Reset on close",
         "options": ["On", "Off"],
         "defaultValue": "On",
-        "description": "Restore the original wallpaper when Spotify closes or playback stops."
+        "description": "Remove the album-art layer when Spotify closes or playback stops."
       },
       {
         "key": "blurEffect",

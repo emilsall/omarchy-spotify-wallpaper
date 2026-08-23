@@ -1,7 +1,7 @@
 #!/bin/bash
-# spotify-wallpaper.sh — Set currently playing Spotify album art as desktop wallpaper.
+# spotify-wallpaper.sh — Render Spotify album art for the selected monitor layer.
 # Reads settings from ~/.config/omarchy/shell.json (the source of truth).
-# Settings: enabled, cropMode, showTrackInfo, resetOnClose, blurEffect
+# Settings: enabled, cropMode, showTrackInfo, resetOnClose, blurEffect, targetMonitor
 set -euo pipefail
 
 # The plugin ID is the name of the folder this script lives in, so renames of
@@ -17,6 +17,7 @@ ORIGINAL_FILE="$STATE_DIR/original-wallpaper"
 LAST_ART_FILE="$STATE_DIR/last-art-url"
 LAST_SETTINGS_FILE="$STATE_DIR/last-settings"
 LAST_TRACK_FILE="$STATE_DIR/last-track-key"
+ACTIVE_WALLPAPER_FILE="$STATE_DIR/active-wallpaper.json"
 THEME_MTIME_FILE="$STATE_DIR/theme-mtime"
 BACKGROUND_LINK="$HOME/.local/state/omarchy/current/background"
 POLL_INTERVAL=2
@@ -74,23 +75,41 @@ read_config() {
     local show_track_info="true"
     local reset_on_close="true"
     local blur_effect="false"
+    local target_monitor="auto"
     if [[ -f "$SHELL_JSON" ]]; then
         local line
         line=$(jq -r --arg id "$PLUGIN_ID" '
             ([.bar.layout.left, .bar.layout.center, .bar.layout.right] | flatten
              | map(select(.id == $id)) | .[0]) // empty
             | [(.enabled // "On"), (.cropMode // "fullscreen"),
-               (.showTrackInfo // "On"), (.resetOnClose // "On"), (.blurEffect // "Off")] | @tsv
+               (.showTrackInfo // "On"), (.resetOnClose // "On"), (.blurEffect // "Off"),
+               (.targetMonitor // "auto")] | @tsv
         ' "$SHELL_JSON" 2>/dev/null || true)
         if [[ -n "$line" ]]; then
-            IFS=$'\t' read -r enabled crop_mode show_track_info reset_on_close blur_effect <<< "$line"
+            IFS=$'\t' read -r enabled crop_mode show_track_info reset_on_close blur_effect target_monitor <<< "$line"
         fi
     fi
     [[ "$enabled" == "On" || "$enabled" == "true" ]] && enabled="true" || enabled="false"
     [[ "$show_track_info" == "On" || "$show_track_info" == "true" ]] && show_track_info="true" || show_track_info="false"
     [[ "$reset_on_close" == "On" || "$reset_on_close" == "true" ]] && reset_on_close="true" || reset_on_close="false"
     [[ "$blur_effect" == "On" || "$blur_effect" == "true" ]] && blur_effect="true" || blur_effect="false"
-    printf '%s\n%s\n%s\n%s\n%s\n' "$enabled" "$crop_mode" "$show_track_info" "$reset_on_close" "$blur_effect"
+    printf '%s\n%s\n%s\n%s\n%s\n%s\n' "$enabled" "$crop_mode" "$show_track_info" "$reset_on_close" "$blur_effect" "$target_monitor"
+}
+
+resolve_target_monitor() {
+    local requested="$1"
+    local monitors
+    monitors=$(hyprctl monitors -j 2>/dev/null || printf '[]')
+
+    if [[ "$requested" == "all" ]]; then
+        printf 'all'
+    elif [[ "$requested" != "auto" ]] && jq -e --arg name "$requested" 'any(.name == $name)' >/dev/null 2>&1 <<< "$monitors"; then
+        printf '%s' "$requested"
+    else
+        # Auto is resolved once per update, rather than following focus and
+        # moving an already displayed wallpaper between monitors.
+        jq -r '([.[] | select(.focused)][0] // .[0] // {}).name // empty' <<< "$monitors"
+    fi
 }
 
 get_theme_color() {
@@ -103,10 +122,13 @@ get_theme_color() {
 }
 
 get_screen_dimensions() {
-    # Use the largest connected monitor by area so the rendered wallpaper
-    # covers every output.
+    local target_monitor="$1"
     local dims=""
-    dims=$(hyprctl monitors -j 2>/dev/null | jq -r 'sort_by(.width * .height) | last | "\(.width)x\(.height)"' 2>/dev/null || true)
+    if [[ "$target_monitor" == "all" || -z "$target_monitor" ]]; then
+        dims=$(hyprctl monitors -j 2>/dev/null | jq -r 'sort_by(.width * .height) | last | "\(.width)x\(.height)"' 2>/dev/null || true)
+    else
+        dims=$(hyprctl monitors -j 2>/dev/null | jq -r --arg name "$target_monitor" '.[] | select(.name == $name) | "\(.width)x\(.height)"' 2>/dev/null || true)
+    fi
     if [[ -z "$dims" ]]; then
         dims="1920x1080"
         log "Warning: could not detect screen resolution, defaulting to $dims"
@@ -174,6 +196,7 @@ process_image() {
     local album="$6"
     local title="$7"
     local blur_effect="$8"
+    local target_monitor="$9"
 
     local bg_color
     bg_color=$(get_theme_color "background" "#1e1e2e")
@@ -183,7 +206,7 @@ process_image() {
     dim_fg_color=$(get_theme_color "dark_foreground" "#9aa1b7")
 
     local screen_dims
-    screen_dims=$(get_screen_dimensions)
+    screen_dims=$(get_screen_dimensions "$target_monitor")
     local screen_w="${screen_dims%x*}"
     local screen_h="${screen_dims#*x}"
 
@@ -194,7 +217,7 @@ process_image() {
     # processed cache key must include the track text — otherwise a same-album
     # track change would reuse the image with the previous track's title.
     # v4: fix pill alpha order (was drawn fully opaque, not 50% black).
-    local settings_key="${crop_mode}_${blur_effect}_${show_info}_v4"
+    local settings_key="${crop_mode}_${blur_effect}_${show_info}_${screen_dims}_v5"
     if [[ "$show_info" == "true" ]]; then
         local track_hash
         track_hash=$(printf '%s' "${artist}|${album}|${title}" | md5sum | cut -d' ' -f1)
@@ -376,11 +399,11 @@ restore_wallpaper() {
         restore_path=$(cat "$THEME_WALLPAPER_FILE")
         log "Using persistent theme wallpaper as fallback"
     fi
+    rm -f "$ACTIVE_WALLPAPER_FILE"
     if [[ -n "$restore_path" ]] && [[ -f "$restore_path" ]]; then
-        omarchy theme bg set "$restore_path"
-        log "Restored original wallpaper: $restore_path"
+        log "Removed album-art layer; revealed Omarchy wallpaper: $restore_path"
     else
-        log "Warning: no original wallpaper to restore"
+        log "Removed album-art layer; no saved theme wallpaper reference found"
     fi
     rm -f "$ORIGINAL_FILE" "$LAST_ART_FILE" "$LAST_SETTINGS_FILE" "$LAST_TRACK_FILE"
     # Defer cache cleanup: the shell's background transition may still be
@@ -396,9 +419,10 @@ set_album_art() {
     local artist="$5"
     local album="$6"
     local title="$7"
+    local target_monitor="$8"
 
     local track_key="${art_url}|${artist}|${album}|${title}"
-    local settings_key="${crop_mode}_${blur_effect}_${show_info}"
+    local settings_key="${crop_mode}_${blur_effect}_${show_info}_${target_monitor}"
 
     if [[ -f "$LAST_ART_FILE" ]] && [[ "$(cat "$LAST_ART_FILE")" == "$art_url" ]] && \
        [[ -f "$LAST_SETTINGS_FILE" ]] && [[ "$(cat "$LAST_SETTINGS_FILE")" == "$settings_key" ]] && \
@@ -443,13 +467,15 @@ set_album_art() {
         local url_hash
         url_hash=$(printf '%s' "$art_url" | md5sum | cut -d' ' -f1)
         local final_dest
-        final_dest=$(process_image "$raw_dest" "$crop_mode" "$url_hash" "$show_info" "$artist" "$album" "$title" "$blur_effect")
+        final_dest=$(process_image "$raw_dest" "$crop_mode" "$url_hash" "$show_info" "$artist" "$album" "$title" "$blur_effect" "$target_monitor")
         if [[ -n "$final_dest" ]] && [[ -f "$final_dest" ]]; then
-            omarchy theme bg set "$final_dest"
+            jq -n --arg path "$final_dest" --arg monitor "$target_monitor" \
+                '{path: $path, monitor: $monitor}' > "$ACTIVE_WALLPAPER_FILE.tmp"
+            mv "$ACTIVE_WALLPAPER_FILE.tmp" "$ACTIVE_WALLPAPER_FILE"
             printf '%s' "$art_url" > "$LAST_ART_FILE"
             printf '%s' "$settings_key" > "$LAST_SETTINGS_FILE"
             printf '%s' "$track_key" > "$LAST_TRACK_FILE"
-            log "Set album art as wallpaper: $title - $artist (crop: $crop_mode, info: $show_info, blur: $blur_effect)"
+            log "Set album art as wallpaper on $target_monitor: $title - $artist (crop: $crop_mode, info: $show_info, blur: $blur_effect)"
         fi
     fi
 }
@@ -473,13 +499,15 @@ while true; do
     config_show_info=$(echo "$config_output" | sed -n '3p')
     config_reset_on_close=$(echo "$config_output" | sed -n '4p')
     config_blur=$(echo "$config_output" | sed -n '5p')
+    config_target=$(echo "$config_output" | sed -n '6p')
+    resolved_target=$(resolve_target_monitor "$config_target")
 
-    current_settings_key="${config_crop}_${config_blur}_${config_show_info}"
+    current_settings_key="${config_crop}_${config_blur}_${config_show_info}_${resolved_target}"
 
     if [[ "$config_enabled" != "true" ]]; then
         if $was_enabled; then
             was_enabled=false
-            log "Plugin disabled — restoring original wallpaper"
+            log "Plugin disabled — removing album-art layer"
             restore_wallpaper
             spotify_playing=false
         fi
@@ -524,7 +552,7 @@ while true; do
         title=$(playerctl -p "$ACTIVE_PLAYER" metadata xesam:title 2>/dev/null || true)
 
         if [[ -n "$art_url" ]]; then
-            set_album_art "$art_url" "$config_crop" "$config_show_info" "$config_blur" "$artist" "$album" "$title"
+            set_album_art "$art_url" "$config_crop" "$config_show_info" "$config_blur" "$artist" "$album" "$title" "$resolved_target"
         fi
     else
         if $spotify_playing; then
@@ -532,9 +560,9 @@ while true; do
             if [[ "$config_reset_on_close" == "true" ]]; then
                 any_player=$(playerctl -l 2>/dev/null | grep -i spotify | head -1 || true)
                 if [[ -z "$any_player" ]]; then
-                    log "Spotify closed — restoring original wallpaper"
+                    log "Spotify closed — removing album-art layer"
                 else
-                    log "Spotify paused/stopped — restoring original wallpaper"
+                    log "Spotify paused/stopped — removing album-art layer"
                 fi
                 restore_wallpaper
             else
