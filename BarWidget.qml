@@ -22,6 +22,7 @@ BarWidget {
   property bool serviceInstalled: false
   property bool installing: false
   property string installOutput: ""
+  property string depsMissing: ""
   property bool setupChecked: false
 
   function pluginFile(name) {
@@ -32,7 +33,8 @@ BarWidget {
     if (installProc.running) return
     root.installing = true
     root.installOutput = ""
-    installProc.command = ["/usr/bin/bash", pluginFile("install.sh")]
+    // --install-deps routes missing packages through pkexec (polkit prompt).
+    installProc.command = ["/usr/bin/bash", pluginFile("install.sh"), "--install-deps"]
     installProc.running = true
   }
 
@@ -64,9 +66,18 @@ BarWidget {
     stderr: StdioCollector { id: installStderr; waitForEnd: true }
     onExited: function(exitCode) {
       root.installing = false
-      root.installOutput = exitCode === 0
-        ? ""
-        : (installStdout.text + "\n" + installStderr.text).trim()
+      if (exitCode === 0) {
+        root.installOutput = ""
+        root.depsMissing = ""
+      } else {
+        var out = (installStdout.text + "\n" + installStderr.text).trim()
+        root.installOutput = out
+        // install.sh prints "Missing dependencies: <cmds>" on stderr (exit 2)
+        // when deps are absent and it was not told to install them. Surface
+        // that list so the panel can offer a password-prompted install button.
+        var m = /Missing dependencies:\s*(.+)/.exec(out)
+        root.depsMissing = m ? String(m[1]).trim() : ""
+      }
     }
   }
 
@@ -104,9 +115,6 @@ BarWidget {
     }
   }
 
-  implicitWidth: button.implicitWidth
-  implicitHeight: button.implicitHeight
-
   WidgetButton {
     id: button
     anchors.fill: parent
@@ -116,7 +124,9 @@ BarWidget {
     dimmed: !root.enabled
     keepSpace: true
     tooltipText: !root.serviceInstalled
-      ? "Spotify Wallpaper \u00B7 Setup required"
+      ? (root.depsMissing !== ""
+         ? "Spotify Wallpaper \u00B7 Dependencies required"
+         : "Spotify Wallpaper \u00B7 Setup required")
       : root.enabled ? "Spotify Wallpaper \u00B7 " + root.cropMode : "Spotify Wallpaper \u00B7 Disabled"
 
     onPressed: function(b) {

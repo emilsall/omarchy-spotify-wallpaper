@@ -34,6 +34,8 @@ Panel {
   readonly property bool serviceInstalled: hostWidget ? hostWidget.serviceInstalled : true
   readonly property bool installing: hostWidget ? hostWidget.installing : false
   readonly property string installOutput: hostWidget ? hostWidget.installOutput : ""
+  readonly property string depsMissing: hostWidget ? hostWidget.depsMissing : ""
+  readonly property bool depsNeeded: depsMissing !== ""
 
   function runInstall() { if (hostWidget) hostWidget.runInstall() }
 
@@ -202,23 +204,26 @@ Panel {
             foreground: root.foreground
           }
 
-          // Setup section — only visible until the background service exists.
+          // Setup section — visible until the background service exists.
           // The widget auto-runs install.sh once on load; this is the status
-          // display and manual retry path.
+          // display and manual retry path. When dependencies are missing it
+          // offers an install button that prompts for a password via polkit.
           Column {
             visible: !root.serviceInstalled
             width: parent.width
             spacing: Style.space(10)
 
             PanelSectionHeader {
-              text: "SETUP REQUIRED"
+              text: root.depsNeeded ? "DEPENDENCIES REQUIRED" : "SETUP REQUIRED"
               foreground: root.foreground
               fontFamily: root.fontFamily
             }
 
             Text {
               width: parent.width
-              text: "The background service that watches Spotify playback is not installed yet."
+              text: root.depsNeeded
+                ? "Missing packages: " + root.depsMissing + ". Click below to install them — Omarchy will ask for your password."
+                : "The background service that watches Spotify playback is not installed yet."
               color: Qt.darker(root.foreground, 1.4)
               font.family: root.fontFamily
               font.pixelSize: Style.font.body
@@ -227,7 +232,9 @@ Panel {
 
             Button {
               width: parent.width
-              text: root.installing ? "Installing service…" : "Install background service"
+              text: root.installing
+                ? "Installing…"
+                : (root.depsNeeded ? "Install dependencies & service" : "Install background service")
               fontFamily: root.fontFamily
               fontSize: Style.font.body
               iconSize: Style.font.icon

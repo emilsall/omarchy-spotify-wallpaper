@@ -1,12 +1,4 @@
-# Spotify Album Wallpaper — Multi-Monitor Fork
-
-This is a multi-monitor-focused fork of Emil Sall's original
-[Omarchy Spotify Wallpaper](https://github.com/emilsall/omarchy-spotify-wallpaper)
-plugin. It preserves the original plugin's design while adding selectable
-Hyprland output targeting for multi-monitor Omarchy setups and a configurable
-bar section for the plugin icon. These fork-specific
-changes are maintained independently and are not affiliated with or supported
-by the original author.
+# Spotify Album Wallpaper
 
 Shows the currently playing Spotify album art on the monitor you choose while
 leaving Omarchy's normal theme wallpaper visible everywhere else. The album-art
@@ -20,7 +12,7 @@ player with "spotify" in its name is detected automatically.
 
 - Album art becomes the desktop wallpaper while music plays
 - Icon placement can be switched between the left, centre, and right Omarchy
-  bar sections; existing installations remain on the left by default
+  bar sections; left is the default
 - Multi-monitor targeting from the settings panel:
   - **Auto** resolves to the focused monitor whenever album art is generated
     and keeps that resolved output stable until the next wallpaper update
@@ -59,42 +51,35 @@ output such as `DP-2`.
 ## Fresh install
 
 ```sh
-omarchy pkg add playerctl jq imagemagick curl &&
-omarchy plugin add https://github.com/c8h10n4o2-b/omarchy-spotify-wallpaper.git --enable
+omarchy plugin add https://github.com/emilsall/omarchy-spotify-wallpaper.git --enable
 ```
 
 Omarchy clones and validates the plugin, enables its bar widget, and stores it
-at `~/.config/omarchy/plugins/emilsall.spotify-wallpaper`. The retained plugin
-ID provides compatibility with the original plugin.
+at `~/.config/omarchy/plugins/emilsall.spotify-wallpaper`.
 
 When the widget first loads, it runs the bundled installer if the user service
-is missing. The installer verifies dependencies, enables
-`omarchy-spotify-wallpaper.service`, and installs the Omarchy `theme-set` hook.
-If setup cannot finish, the panel reports the error and offers a retry button.
+is missing. The installer enables `omarchy-spotify-wallpaper.service` and
+installs the Omarchy `theme-set` hook. If any required packages
+(`playerctl`, `jq`, `imagemagick`, `curl`) are missing, the settings panel
+shows a **DEPENDENCIES REQUIRED** section with an install button — clicking it
+prompts for your password through Omarchy's polkit agent and installs the
+packages, then completes the service setup. No manual `omarchy pkg add` needed.
 
 Manual setup or repair:
 
 ```sh
-~/.config/omarchy/plugins/emilsall.spotify-wallpaper/install.sh
+~/.config/omarchy/plugins/emilsall.spotify-wallpaper/install.sh --install-deps
 ```
 
 ## Upgrade
 
-Update a normal Git-managed installation with:
+Update a Git-managed installation with:
 
 ```sh
 omarchy plugin update emilsall.spotify-wallpaper --yes &&
-~/.config/omarchy/plugins/emilsall.spotify-wallpaper/install.sh &&
+~/.config/omarchy/plugins/emilsall.spotify-wallpaper/install.sh --install-deps &&
 omarchy restart shell
 ```
-
-If the original upstream plugin is already installed, it has the same plugin
-ID and cannot coexist with this fork. Remove the original installation first,
-then perform the fresh install above. Settings stored on the existing bar entry
-use compatible keys. The new `targetMonitor` setting defaults to `auto`, and
-`barSection` defaults to `left` to preserve the original icon placement.
-
-## Usage
 
 Click the disc-album icon in the bar to open the settings panel. Right-click
 the icon to quickly toggle the plugin on/off.
@@ -102,7 +87,7 @@ the icon to quickly toggle the plugin on/off.
 | Setting | Description |
 |---------|-------------|
 | Enabled | Master on/off. Turning it off removes the album-art layer and reveals the normal Omarchy wallpaper. |
-| Bar placement | Moves the icon to the left, centre, or right section of the Omarchy bar. Left is the default for backward compatibility. |
+| Bar placement | Moves the icon to the left, centre, or right section of the Omarchy bar. Left is the default. |
 | Target monitor | The dropdown lists `auto`, `all`, and every currently connected Hyprland output. `auto` resolves to the focused monitor whenever album art is generated; `all` displays it on every monitor; choosing a named output such as `DP-1` or `DP-2` pins it there while other monitors retain their normal Omarchy wallpaper. If a pinned output is unavailable, the next update falls back to the focused output without overwriting the saved selection. |
 | Crop mode | Fullscreen (center-crop fill), Centered 75% (75% of shortest screen dimension), or Native (original art size) — centered modes letterbox on the theme background color. |
 | Show track info | Overlay artist, album, and track title using theme colors and the current Omarchy font. |
@@ -214,11 +199,14 @@ v1.0.0 - first release
 v1.1.0 - added blur effect
 v1.2.0 - added selectable multi-monitor targeting
 v1.3.0 - added selectable left, centre, or right bar placement
+v1.4.0 - improved post-install flow: auto-install missing dependencies via polkit password prompt
 
-## Support the original author
+## Contributors
 
-The original single-wallpaper plugin was created by Emil Sall. If you like the
-foundation this fork builds on, you can buy the original author a coffee:
+- **Emil Sall** — original plugin, blur effect, post-install self-setup
+- **c8h10n4o2-b** — multi-monitor targeting, configurable bar placement
+
+Props to Emil for the foundation. If you like this plugin, buy him a coffee:
 
 https://buymeacoffee.com/emilsall
 

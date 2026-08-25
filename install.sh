@@ -1,9 +1,15 @@
 #!/bin/bash
 # install.sh — Set up the Spotify Album Wallpaper plugin's background service.
 #
-# Run this once after `omarchy plugin add`. It installs a systemd user service
-# that watches Spotify playback and a theme-set hook that keeps the original
-# wallpaper reference up to date.
+# Run once after `omarchy plugin add`. Installs missing Arch packages (when
+# invoked with --install-deps, through a polkit password prompt), a systemd
+# user service that watches Spotify playback, and a theme-set hook that keeps
+# the restorable wallpaper reference current.
+#
+# Exit codes:
+#   0  service installed (or already present and refreshed)
+#   2  dependencies missing and --install-deps was not given
+#   1  dependency installation canceled/failed, or other setup failure
 set -euo pipefail
 
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -11,29 +17,57 @@ PLUGIN_ID="$(basename "$PLUGIN_DIR")"
 SERVICE_NAME="omarchy-spotify-wallpaper.service"
 SERVICE_DIR="$HOME/.config/systemd/user"
 
-echo "Installing Spotify Album Wallpaper ($PLUGIN_ID)"
-
-# Check dependencies
-missing=()
-for cmd in playerctl jq magick curl; do
-  command -v "$cmd" >/dev/null 2>&1 || missing+=("$cmd")
+INSTALL_DEPS=false
+for arg in "$@"; do
+  case "$arg" in
+    --install-deps) INSTALL_DEPS=true ;;
+    --help) echo "Usage: install.sh [--install-deps]"; exit 0 ;;
+    *) echo "Unknown argument: $arg" >&2; exit 1 ;;
+  esac
 done
 
-if (( ${#missing[@]} > 0 )); then
-  echo ""
-  echo "Missing required dependencies: ${missing[*]}"
-  echo "Install them with:"
-  echo ""
-  pkgs=()
-  for cmd in "${missing[@]}"; do
-    case "$cmd" in
-      magick) pkgs+=("imagemagick") ;;
-      *)      pkgs+=("$cmd") ;;
-    esac
+echo "Installing Spotify Album Wallpaper ($PLUGIN_ID)"
+
+# Ordered dependency list: command, Arch package.
+DEP_CMDS=(playerctl jq magick curl)
+DEP_PKGS=(playerctl jq imagemagick curl)
+
+missing_cmds=()
+missing_pkgs=()
+check_deps() {
+  missing_cmds=()
+  missing_pkgs=()
+  for i in "${!DEP_CMDS[@]}"; do
+    local cmd="${DEP_CMDS[$i]}"
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+      missing_cmds+=("$cmd")
+      missing_pkgs+=("${DEP_PKGS[$i]}")
+    fi
   done
-  echo "  omarchy pkg add ${pkgs[*]}"
-  echo ""
-  exit 1
+}
+
+check_deps
+
+if (( ${#missing_cmds[@]} > 0 )); then
+  if [[ "$INSTALL_DEPS" == "false" ]]; then
+    # Single clean line the panel can display.
+    echo "Missing dependencies: ${missing_cmds[*]}" >&2
+    exit 2
+  fi
+
+  echo "Requesting authorization to install: ${missing_pkgs[*]}"
+  # pkexec triggers Omarchy's polkit agent (graphical password prompt).
+  if ! pkexec omarchy pkg add "${missing_pkgs[@]}"; then
+    echo "Dependency installation was canceled or failed." >&2
+    exit 1
+  fi
+
+  check_deps
+  if (( ${#missing_cmds[@]} > 0 )); then
+    echo "Dependencies still missing after install: ${missing_cmds[*]}" >&2
+    exit 1
+  fi
+  echo "Dependencies installed."
 fi
 
 # Install systemd user service
