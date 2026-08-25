@@ -82,7 +82,7 @@ BarWidget {
   }
 
   readonly property bool opened: panelLoader.item ? panelLoader.item.opened === true : false
-  readonly property real openPanelIndicatorWidth: button.labelWidth
+  readonly property real openPanelIndicatorWidth: Style.bar.iconSlot
   readonly property real openPanelIndicatorHeight: Math.max(Style.space(10), Math.round(Style.bar.iconSlot * 0.55))
   readonly property bool popoutSwitchClosing: panelLoader.item ? panelLoader.item.popoutSwitchClosing === true : false
 
@@ -99,6 +99,11 @@ BarWidget {
   function close() { if (panelLoader.item) panelLoader.item.close() }
   function toggle() { if (panelLoader.item) panelLoader.item.toggle() }
   function closeForPopoutSwitch() { if (panelLoader.item) panelLoader.item.closeForPopoutSwitch() }
+
+  // The bar slot sizes itself to the widget's implicit size. Without these
+  // the slot collapses to 0 width and the icon never appears.
+  implicitWidth: Style.bar.iconSlot
+  implicitHeight: root.barSize
 
   onBarChanged: Qt.callLater(injectPanel)
   onSettingsChanged: Qt.callLater(injectPanel)
@@ -128,13 +133,13 @@ BarWidget {
         smooth: true
         mipmap: true
         fillMode: Image.PreserveAspectFit
-        visible: false
+        visible: true
       }
       MultiEffect {
         source: iconImage
         anchors.fill: parent
         colorization: 1.0
-        colorizationColor: parent.parent.parent.foreground
+        colorizationColor: root.bar ? root.bar.barForeground : Color.foreground
       }
     }
   }
@@ -143,7 +148,7 @@ BarWidget {
     id: button
     anchors.fill: parent
     bar: root.bar
-    iconComponent: root.iconComponent
+    iconComponent: iconComponent
     dimmed: !root.enabled
     tooltipText: !root.serviceInstalled
       ? (root.depsMissing !== ""
