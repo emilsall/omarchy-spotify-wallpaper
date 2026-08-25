@@ -115,15 +115,36 @@ BarWidget {
     }
   }
 
-  WidgetButton {
+  Component {
+    id: iconComponent
+    Item {
+      anchors.fill: parent
+      Image {
+        id: iconImage
+        anchors.fill: parent
+        source: root.iconSource
+        sourceSize.width: 64
+        sourceSize.height: 64
+        smooth: true
+        mipmap: true
+        fillMode: Image.PreserveAspectFit
+        visible: false
+      }
+      MultiEffect {
+        source: iconImage
+        anchors.fill: parent
+        colorization: 1.0
+        colorizationColor: parent.parent.parent.foreground
+      }
+    }
+  }
+
+  BarIconButton {
     id: button
     anchors.fill: parent
     bar: root.bar
-    text: " "
-    fixedWidth: Style.bar.iconSlot
-    hasVisualContent: true
+    iconComponent: root.iconComponent
     dimmed: !root.enabled
-    keepSpace: true
     tooltipText: !root.serviceInstalled
       ? (root.depsMissing !== ""
          ? "Spotify Wallpaper \u00B7 Dependencies required"
@@ -140,30 +161,6 @@ BarWidget {
         root.settings = entry
         if (root.bar && root.bar.shell && typeof root.bar.shell.updateEntryInline === "function")
           root.bar.shell.updateEntryInline(root.moduleName, entry)
-      }
-    }
-
-    Item {
-      anchors.centerIn: parent
-      width: Style.bar.iconSlot * 0.9
-      height: width
-      opacity: root.enabled ? 1.0 : 0.45
-      layer.enabled: true
-      layer.smooth: true
-      layer.effect: MultiEffect {
-        source: iconImage
-        colorization: 1.0
-        colorizationColor: button.foreground
-      }
-
-      Image {
-        id: iconImage
-        anchors.fill: parent
-        source: root.iconSource
-        sourceSize.width: 64
-        sourceSize.height: 64
-        smooth: true
-        mipmap: true
       }
     }
   }
