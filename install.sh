@@ -17,6 +17,10 @@ PLUGIN_ID="$(basename "$PLUGIN_DIR")"
 SERVICE_NAME="omarchy-spotify-wallpaper.service"
 SERVICE_DIR="$HOME/.config/systemd/user"
 
+# omarchy plugin add clones with .git, which triggers the shell's file watcher
+# into a reload storm that prevents the bar widget from stabilizing.
+rm -rf "$PLUGIN_DIR/.git" 2>/dev/null || true
+
 INSTALL_DEPS=false
 for arg in "$@"; do
   case "$arg" in
