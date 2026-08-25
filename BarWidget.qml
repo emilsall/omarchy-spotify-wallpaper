@@ -120,6 +120,7 @@ BarWidget {
     anchors.fill: parent
     bar: root.bar
     text: " "
+    fixedWidth: Style.bar.iconSlot
     hasVisualContent: true
     dimmed: !root.enabled
     keepSpace: true
@@ -144,7 +145,7 @@ BarWidget {
 
     Item {
       anchors.centerIn: parent
-      width: Style.font.body * 1.4
+      width: Style.bar.iconSlot * 0.9
       height: width
       opacity: root.enabled ? 1.0 : 0.45
       layer.enabled: true
