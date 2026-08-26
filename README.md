@@ -28,11 +28,6 @@ player with "spotify" in its name is detected automatically.
 - Settings panel in the Omarchy bar with native panel UI
 
 ## Screenshots
-### Multi-monitor targeting
-Select `auto`, every connected output, or pin album art to a specific Hyprland
-output such as `DP-2`.
-
-![Multi-monitor target selection](screenshots/multi-monitor.png)
 
 ### Appearance
 ![panel](screenshots/panel.png)
@@ -41,6 +36,7 @@ output such as `DP-2`.
 ![full](screenshots/full.png)
 ![blur](screenshots/blur1.png)
 ![blur](screenshots/blur2.png)
+![Multi-monitor target selection](screenshots/multi-monitor.png)
 
 ## Requirements
 
@@ -201,11 +197,11 @@ git diff --check
 ```
 
 ## Changelog
-v1.0.0 - first release
-v1.1.0 - added blur effect
-v1.2.0 - added selectable multi-monitor targeting
-v1.3.0 - added selectable left, centre, or right bar placement
-v1.4.0 - improved post-install flow: auto-install missing dependencies via polkit password prompt
+v1.0.0 - first release  
+v1.1.0 - added blur effect  
+v1.2.0 - added selectable multi-monitor targeting  
+v1.3.0 - added selectable left, centre, or right bar placement  
+v1.4.0 - improved post-install flow: auto-install missing dependencies via polkit password prompt  
 v1.4.1 - album art changes cross-fade like the Omarchy background switcher, and the transparent bar text adapts to the album art; reset plays the shell's reveal animation again
 
 ## Contributors
@@ -213,8 +209,7 @@ v1.4.1 - album art changes cross-fade like the Omarchy background switcher, and 
 - **Emil Sall** — original plugin, blur effect, post-install self-setup
 - **c8h10n4o2-b** — multi-monitor targeting, configurable bar placement
 
-Props to Emil for the foundation. If you like this plugin, buy him a coffee:
-
+If you like this plugin, consider buying me a coffee:
 https://buymeacoffee.com/emilsall
 
 ## License
