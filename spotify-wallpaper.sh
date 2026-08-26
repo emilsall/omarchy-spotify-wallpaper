@@ -21,6 +21,7 @@ ACTIVE_WALLPAPER_FILE="$STATE_DIR/active-wallpaper.json"
 THEME_MTIME_FILE="$STATE_DIR/theme-mtime"
 BACKGROUND_LINK="$HOME/.local/state/omarchy/current/background"
 POLL_INTERVAL=2
+STOP_GRACE=1
 
 mkdir -p "$STATE_DIR" "$CACHE_DIR"
 
@@ -438,6 +439,7 @@ restore_wallpaper() {
     else
         log "Removed album-art layer; no saved theme wallpaper reference found"
     fi
+    rm -f "$ORIGINAL_FILE" "$LAST_ART_FILE" "$LAST_SETTINGS_FILE" "$LAST_TRACK_FILE"
     # reading the just-replaced image. Deleting it immediately races the fade.
     (sleep 5; rm -f "$CACHE_DIR"/*.jpg) &
 }
@@ -612,8 +614,15 @@ while true; do
         fi
     else
         if $spotify_playing; then
-            spotify_playing=false
-            if [[ "$config_reset_on_close" == "true" ]]; then
+            # Track changes can briefly drop the MPRIS playing status; wait a
+            # moment and re-check before tearing the wallpaper down, so a
+            # normal song transition never flashes the theme wallpaper.
+            sleep "$STOP_GRACE"
+            detect_playing_player
+            if [[ -n "$ACTIVE_PLAYER" ]]; then
+                : # playback blip resolved — keep the album art up
+            elif [[ "$config_reset_on_close" == "true" ]]; then
+                spotify_playing=false
                 any_player=$(playerctl -l 2>/dev/null | grep -i spotify | head -1 || true)
                 if [[ -z "$any_player" ]]; then
                     log "Spotify closed — removing album-art layer"
@@ -622,6 +631,7 @@ while true; do
                 fi
                 restore_wallpaper
             else
+                spotify_playing=false
                 log "Playback stopped — keeping current wallpaper (resetOnClose disabled)"
                 rm -f "$LAST_ART_FILE" "$LAST_SETTINGS_FILE" "$LAST_TRACK_FILE"
             fi

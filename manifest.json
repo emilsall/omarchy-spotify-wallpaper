@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "emilsall.spotify-wallpaper",
   "name": "Spotify Album Wallpaper",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "author": "Emil Sall",
   "license": "MIT",
   "description": "Show the currently playing Spotify album art as your desktop wallpaper, with multi-monitor targeting, crop modes, blur, and track info.",

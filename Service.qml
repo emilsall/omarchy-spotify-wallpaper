@@ -12,22 +12,44 @@ Item {
   property string targetMonitor: ""
 
   // Crossfade state shared by every screen's layer, mirroring the shell's
-  // 420 ms background reveal: a new art path fades in over the previous one,
-  // and an empty path fades the art out before the layer hides.
-  property string displayPath: ""
-  property string fadeFromPath: ""
+  // 420 ms background reveal. Two image slots ping-pong: each new art path is
+  // loaded into the covered slot while the current art stays fully opaque on
+  // top, and the fade only starts once the load finished — so a track change
+  // never flashes the theme wallpaper through a half-loaded image.
+  property string pathA: ""          // source of slot A
+  property string pathB: ""          // source of slot B
+  property bool aOnTop: true         // which slot is the newest (top) one
+  property string displayPath: ""    // art the top slot holds
+  property string incomingPath: ""   // art currently loading/fading in
   property string activeMonitor: ""
-  property real artOpacity: 0
+  property real fadeOpacity: 0
+  property bool hiding: false
 
   onWallpaperPathChanged: {
-    if (root.wallpaperPath !== "") {
-      if (root.displayPath !== "" && root.displayPath !== root.wallpaperPath)
-        root.fadeFromPath = root.displayPath
-      root.displayPath = root.wallpaperPath
+    var path = root.wallpaperPath
+    if (path !== "") {
+      if (path === root.displayPath || path === root.incomingPath) return
+      // A fade still in flight snaps to its target before the next one starts.
+      if (root.incomingPath !== "") {
+        root.displayPath = root.incomingPath
+        root.fadeOpacity = 1
+        revealAnim.stop()
+      }
+      root.incomingPath = path
       root.activeMonitor = root.targetMonitor
-      fadeOutClearTimer.stop()
-      revealAnim.restart()
-    } else if (root.displayPath !== "") {
+      root.hiding = false
+      // Load into the covered slot; the current art stays opaque above it.
+      if (root.pathA !== root.displayPath || root.displayPath === "") {
+        root.pathA = path
+        root.aOnTop = true
+      } else {
+        root.pathB = path
+        root.aOnTop = false
+      }
+      // The incoming slot starts fully transparent while it decodes.
+      root.fadeOpacity = 0
+    } else if (root.displayPath !== "" && !root.hiding) {
+      root.hiding = true
       hideAnim.restart()
     }
   }
@@ -35,32 +57,40 @@ Item {
   NumberAnimation {
     id: revealAnim
     target: root
-    property: "artOpacity"
+    property: "fadeOpacity"
     from: 0
     to: 1
     duration: 420
     easing.type: Easing.InOutCubic
-    onFinished: root.fadeFromPath = ""
+    onFinished: {
+      root.displayPath = root.incomingPath
+      root.incomingPath = ""
+    }
   }
 
   NumberAnimation {
     id: hideAnim
     target: root
-    property: "artOpacity"
+    property: "fadeOpacity"
     to: 0
     duration: 420
     easing.type: Easing.InOutCubic
     onFinished: {
       root.displayPath = ""
-      root.fadeFromPath = ""
+      root.incomingPath = ""
+      root.pathA = ""
+      root.pathB = ""
       root.activeMonitor = ""
+      root.hiding = false
+      root.fadeOpacity = 0
     }
   }
 
-  Timer {
-    id: fadeOutClearTimer
-    interval: 500
-    onTriggered: root.fadeFromPath = ""
+  function maybeReveal(img, path) {
+    if (img.status !== Image.Ready) return
+    if (root.incomingPath === "" || path !== root.incomingPath) return
+    if (root.hiding || revealAnim.running) return
+    revealAnim.restart()
   }
 
   function loadState() {
@@ -118,38 +148,42 @@ Item {
     PanelWindow {
       required property var modelData
       screen: modelData
-      visible: root.displayPath !== "" &&
-               (root.activeMonitor === "all" || root.activeMonitor === String(modelData.name || ""))
+      visible: root.displayPath !== "" || root.incomingPath !== ""
+               ? (root.activeMonitor === "all" || root.activeMonitor === String(modelData.name || ""))
+               : false
       color: "transparent"
       exclusionMode: ExclusionMode.Ignore
       anchors { top: true; bottom: true; left: true; right: true }
-
       WlrLayershell.namespace: "omarchy-spotify-wallpaper"
       WlrLayershell.layer: WlrLayer.Background
       WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
-      // Previous art stays fully opaque underneath while the new art fades in.
       Image {
+        id: imgOver
         anchors.fill: parent
-        source: root.fadeFromPath
+        source: root.pathA
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
         cache: false
         smooth: true
         mipmap: true
-        visible: root.fadeFromPath !== "" && root.artOpacity < 1
+        visible: root.pathA !== ""
+        z: root.aOnTop ? 1 : 0
+        opacity: root.pathA === root.displayPath && root.displayPath !== "" && !root.hiding ? 1 : root.fadeOpacity
       }
 
       Image {
+        id: imgUnder
         anchors.fill: parent
-        source: root.displayPath
+        source: root.pathB
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
         cache: false
         smooth: true
         mipmap: true
-        visible: root.displayPath !== ""
-        opacity: root.artOpacity
+        visible: root.pathB !== ""
+        z: root.aOnTop ? 0 : 1
+        opacity: root.pathB === root.displayPath && root.displayPath !== "" && !root.hiding ? 1 : root.fadeOpacity
       }
     }
   }
