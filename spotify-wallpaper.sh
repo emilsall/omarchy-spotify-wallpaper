@@ -52,6 +52,24 @@ detect_playing_player() {
     done <<< "$players"
 }
 
+META_ART="" META_ARTIST="" META_ALBUM="" META_TITLE=""
+read_track_metadata() {
+    # One atomic playerctl snapshot. Four separate `playerctl metadata` calls
+    # can straddle a track change and mix the previous track's artUrl with the
+    # new track's title, rendering the previous art for the new song. The
+    # separator (ASCII unit separator) cannot appear in metadata values.
+    local sep=$'\x1f' line
+    line=$(playerctl -p "$ACTIVE_PLAYER" metadata \
+        --format "{{mpris:artUrl}}${sep}{{xesam:artist}}${sep}{{xesam:album}}${sep}{{xesam:title}}" \
+        2>/dev/null || true)
+    META_ART=${line%%"$sep"*}
+    local rest=${line#*"$sep"}
+    META_ARTIST=${rest%%"$sep"*}
+    rest=${rest#*"$sep"}
+    META_ALBUM=${rest%%"$sep"*}
+    META_TITLE=${rest#*"$sep"}
+}
+
 theme_changed() {
     local current_mtime
     current_mtime=$(stat -c %Y "$THEME_COLORS" 2>/dev/null || echo 0)
@@ -604,10 +622,19 @@ while true; do
             log "Spotify playing ($ACTIVE_PLAYER) — switching to album art wallpaper (crop: $config_crop, info: $config_show_info, blur: $config_blur)"
         fi
 
-        art_url=$(playerctl -p "$ACTIVE_PLAYER" metadata mpris:artUrl 2>/dev/null || true)
-        artist=$(playerctl -p "$ACTIVE_PLAYER" metadata xesam:artist 2>/dev/null || true)
-        album=$(playerctl -p "$ACTIVE_PLAYER" metadata xesam:album 2>/dev/null || true)
-        title=$(playerctl -p "$ACTIVE_PLAYER" metadata xesam:title 2>/dev/null || true)
+        read_track_metadata
+        art_url=$META_ART artist=$META_ARTIST album=$META_ALBUM title=$META_TITLE
+        track_key="${art_url}|${artist}|${album}|${title}"
+        if [[ -n "$title" ]] && [[ -f "$LAST_TRACK_FILE" ]] \
+           && [[ "$(cat "$LAST_TRACK_FILE")" != "$track_key" ]]; then
+            # Track boundary: Spotify can serve the previous track's artUrl
+            # for a moment after the title changes. Re-read once after a
+            # short settle so the art always matches the title that is about
+            # to be rendered onto the wallpaper.
+            sleep "$STOP_GRACE"
+            read_track_metadata
+            art_url=$META_ART artist=$META_ARTIST album=$META_ALBUM title=$META_TITLE
+        fi
 
         if [[ -n "$art_url" ]]; then
             set_album_art "$art_url" "$config_crop" "$config_show_info" "$config_blur" "$artist" "$album" "$title" "$resolved_target"
