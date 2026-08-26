@@ -169,6 +169,7 @@ Item {
         mipmap: true
         visible: root.pathA !== ""
         z: root.aOnTop ? 1 : 0
+        onStatusChanged: root.maybeReveal(imgOver, root.pathA)
         opacity: root.pathA === root.displayPath && root.displayPath !== "" && !root.hiding ? 1 : root.fadeOpacity
       }
 
@@ -183,6 +184,7 @@ Item {
         mipmap: true
         visible: root.pathB !== ""
         z: root.aOnTop ? 0 : 1
+        onStatusChanged: root.maybeReveal(imgUnder, root.pathB)
         opacity: root.pathB === root.displayPath && root.displayPath !== "" && !root.hiding ? 1 : root.fadeOpacity
       }
     }
