@@ -203,10 +203,10 @@ v1.1.0 - added blur effect
 v1.2.0 - added selectable multi-monitor targeting  
 v1.3.0 - added selectable left, centre, or right bar placement  
 v1.4.0 - improved post-install flow: auto-install missing dependencies via polkit password prompt  
-v1.4.1 - album art changes cross-fade like the Omarchy background switcher, and the transparent bar text adapts to the album art; reset plays the shell's reveal animation again
-v1.4.2 - no more theme-wallpaper flash between tracks (1 s playback-stop debounce, crossfade loads new art while covered); re-enabling the plugin applies the current album art immediately
-v1.4.3 - fix album art lagging one track behind: metadata is read as a single atomic playerctl snapshot, and a track change waits briefly for Spotify's artUrl to settle before rendering
-v1.4.4 - fix the crossfade never starting: the image status handlers that trigger the reveal were missing, so the wallpaper stayed one track behind
+v1.4.1 - album art changes cross-fade like the Omarchy background switcher, and the transparent bar text adapts to the album art; reset plays the shell's reveal animation again  
+v1.4.2 - no more theme-wallpaper flash between tracks (1 s playback-stop debounce, crossfade loads new art while covered); re-enabling the plugin applies the current album art immediately  
+v1.4.3 - fix album art lagging one track behind: metadata is read as a single atomic playerctl snapshot, and a track change waits briefly for Spotify's artUrl to settle before rendering  
+v1.4.4 - fix the crossfade never starting: the image status handlers that trigger the reveal were missing, so the wallpaper stayed one track behind  
 
 ## Contributors
 
