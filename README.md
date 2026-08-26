@@ -6,7 +6,8 @@ layer is removed when playback stops or Spotify closes.
 
 Works with both the official Spotify client and
 [Omarchy Spotify](https://github.com/stappmus/Omarchy-Spotify) — any MPRIS
-player with "spotify" in its name is detected automatically.
+player with "spotify" in its name is detected automatically. Thanks to Spotify 
+Connect it even works while playing and switching tracks on another device.
 
 ## Features
 
