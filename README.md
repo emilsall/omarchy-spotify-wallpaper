@@ -157,9 +157,15 @@ physical dimensions.
 The service writes the rendered image path and resolved output to
 `active-wallpaper.json`. The plugin's `Service.qml` creates one background-layer
 surface per connected screen and shows album art only where that state says it
-should. It does not call `omarchy theme bg set`, so the global Omarchy background
-symlink and unselected monitors remain untouched. Removing the state file hides
-the album-art layer and reveals the normal Omarchy background immediately.
+should, cross-fading new art over the old with the same 420 ms easing as the
+Omarchy background switcher. While album art is displayed the service points
+Omarchy's background symlink at the rendered art, so the transparent bar picks
+dark or light text by sampling the art exactly as it does for normal
+wallpapers; the global background layer itself stays on the theme wallpaper so
+unselected monitors are untouched. When playback stops (or the plugin is
+disabled) the restore goes through `omarchy theme bg set`, which plays the
+shell's reveal animation and hands the bar text color back to the theme
+wallpaper.
 
 The selected output is stored in Omarchy's normal per-widget settings inside
 `~/.config/omarchy/shell.json`, so it survives plugin and Omarchy updates. If a
@@ -200,6 +206,7 @@ v1.1.0 - added blur effect
 v1.2.0 - added selectable multi-monitor targeting
 v1.3.0 - added selectable left, centre, or right bar placement
 v1.4.0 - improved post-install flow: auto-install missing dependencies via polkit password prompt
+v1.4.1 - album art changes cross-fade like the Omarchy background switcher, and the transparent bar text adapts to the album art; reset plays the shell's reveal animation again
 
 ## Contributors
 

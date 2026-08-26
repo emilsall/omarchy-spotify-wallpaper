@@ -165,6 +165,34 @@ is_cached_art() {
     [[ "$path" == "$CACHE_DIR"/* ]]
 }
 
+point_background_link() {
+    # Repoint Omarchy's background symlink. The transparent bar samples this
+    # file (omarchy-bar-text-color) to pick dark or light text, so it must
+    # track whatever is visible on the wallpaper layer.
+    local target="$1"
+    [[ -n "$target" ]] && [[ -f "$target" ]] || return 0
+    [[ "$(readlink "$BACKGROUND_LINK" 2>/dev/null)" == "$target" ]] && return 0
+    ln -nsf "$target" "$BACKGROUND_LINK"
+}
+
+theme_wallpaper_path() {
+    if [[ -f "$THEME_WALLPAPER_FILE" ]]; then
+        cat "$THEME_WALLPAPER_FILE"
+    elif [[ -f "$ORIGINAL_FILE" ]]; then
+        cat "$ORIGINAL_FILE"
+    fi
+}
+
+ensure_art_link() {
+    # While album art is displayed, keep the symlink on the art even after an
+    # external `omarchy theme bg set` or a theme switch repoints it.
+    [[ -f "$ACTIVE_WALLPAPER_FILE" ]] || return 0
+    local art
+    art=$(jq -r '.path // empty' "$ACTIVE_WALLPAPER_FILE" 2>/dev/null) || return 0
+    [[ -n "$art" ]] && [[ -f "$art" ]] || return 0
+    point_background_link "$art"
+}
+
 capture_theme_wallpaper() {
     local current
     current=$(readlink -f "$BACKGROUND_LINK" 2>/dev/null || true)
@@ -401,12 +429,15 @@ restore_wallpaper() {
     fi
     rm -f "$ACTIVE_WALLPAPER_FILE"
     if [[ -n "$restore_path" ]] && [[ -f "$restore_path" ]]; then
-        log "Removed album-art layer; revealed Omarchy wallpaper: $restore_path"
+        log "Removed album-art layer; restoring Omarchy wallpaper: $restore_path"
+        # Go through Omarchy's background setter so the restore plays the
+        # shell's reveal animation, updates the background symlink, and lets
+        # the transparent bar re-pick its text color for the wallpaper.
+        omarchy theme bg set "$restore_path" >/dev/null 2>&1 || \
+            point_background_link "$restore_path"
     else
         log "Removed album-art layer; no saved theme wallpaper reference found"
     fi
-    rm -f "$ORIGINAL_FILE" "$LAST_ART_FILE" "$LAST_SETTINGS_FILE" "$LAST_TRACK_FILE"
-    # Defer cache cleanup: the shell's background transition may still be
     # reading the just-replaced image. Deleting it immediately races the fade.
     (sleep 5; rm -f "$CACHE_DIR"/*.jpg) &
 }
@@ -476,6 +507,20 @@ set_album_art() {
             printf '%s' "$settings_key" > "$LAST_SETTINGS_FILE"
             printf '%s' "$track_key" > "$LAST_TRACK_FILE"
             log "Set album art as wallpaper on $target_monitor: $title - $artist (crop: $crop_mode, info: $show_info, blur: $blur_effect)"
+            # Keep the global background layer on the theme wallpaper: after
+            # a shell restart mid-playback the background service picks up the
+            # art symlink at startup and would paint the art on every monitor.
+            # Album art lives on this plugin's own per-monitor layer, so the
+            # global layer must stay on the theme wallpaper. No-op when it
+            # already is. The bar text update comes from the symlink below.
+            local theme_bg
+            theme_bg=$(theme_wallpaper_path || true)
+            if [[ -n "$theme_bg" ]] && [[ -f "$theme_bg" ]]; then
+                omarchy-shell -q background set-instant "$theme_bg" 2>/dev/null || true
+            fi
+            # The transparent bar samples the background symlink for its text
+            # color; point it at the art so contrast tracks the album art.
+            point_background_link "$final_dest"
         fi
     fi
 }
@@ -492,6 +537,16 @@ spotify_playing=false
 was_enabled=true
 prev_settings_key=""
 
+# After a shell restart mid-playback the background service picks up the art
+# symlink at startup and paints the art on every monitor. Push the global
+# layer back to the theme wallpaper; the per-monitor layer shows the art.
+if [[ -f "$ACTIVE_WALLPAPER_FILE" ]]; then
+    theme_bg=$(theme_wallpaper_path || true)
+    if [[ -n "$theme_bg" ]] && [[ -f "$theme_bg" ]]; then
+        omarchy-shell -q background set-instant "$theme_bg" 2>/dev/null || true
+    fi
+fi
+
 while true; do
     config_output=$(read_config)
     config_enabled=$(echo "$config_output" | sed -n '1p')
@@ -501,6 +556,7 @@ while true; do
     config_blur=$(echo "$config_output" | sed -n '5p')
     config_target=$(echo "$config_output" | sed -n '6p')
     resolved_target=$(resolve_target_monitor "$config_target")
+    ensure_art_link
 
     current_settings_key="${config_crop}_${config_blur}_${config_show_info}_${resolved_target}"
 
